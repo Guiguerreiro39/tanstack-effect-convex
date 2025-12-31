@@ -1,0 +1,6 @@
+{
+  "extends": "@tanstack-effect-convex/config/tsconfig.base.json",
+  "compilerOptions": {
+    "strictNullChecks": true
+  }
+}
