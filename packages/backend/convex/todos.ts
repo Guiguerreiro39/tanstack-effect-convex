@@ -1,43 +1,80 @@
-import { v } from "convex/values";
-
-import { query, mutation } from "./_generated/server";
+import { Effect } from "effect";
+import { dbEffect } from "@/lib/db-effect";
+import { Policies } from "@/lib/policies";
+import {
+  ConfectMutationCtx,
+  ConfectQueryCtx,
+  mutation,
+  query,
+} from "./confect";
+import {
+  CreateTodoArgs,
+  CreateTodoResult,
+  DeleteTodoArgs,
+  DeleteTodoResult,
+  GetAllTodosArgs,
+  GetAllTodosResult,
+  ToggleTodoArgs,
+  ToggleTodoResult,
+} from "./schemas/todos";
 
 export const getAll = query({
-  handler: async (ctx) => {
-    return await ctx.db.query("todos").collect();
-  },
+  args: GetAllTodosArgs,
+  returns: GetAllTodosResult,
+  handler: () =>
+    dbEffect(
+      Effect.gen(function* () {
+        const { db } = yield* ConfectQueryCtx;
+        return yield* db.query("todos").collect();
+      })
+    ),
 });
 
 export const create = mutation({
-  args: {
-    text: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const newTodoId = await ctx.db.insert("todos", {
-      text: args.text,
-      completed: false,
-    });
-    return await ctx.db.get("todos", newTodoId);
-  },
+  args: CreateTodoArgs,
+  returns: CreateTodoResult,
+  handler: ({ text }) =>
+    dbEffect(
+      Effect.gen(function* () {
+        const { db } = yield* ConfectMutationCtx;
+        yield* Policies.orFail(Policies.requireSignedIn);
+
+        return yield* db.insert("todos", {
+          text,
+          completed: false,
+        });
+      })
+    ),
 });
 
 export const toggle = mutation({
-  args: {
-    id: v.id("todos"),
-    completed: v.boolean(),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch("todos", args.id, { completed: args.completed });
-    return { success: true };
-  },
+  args: ToggleTodoArgs,
+  returns: ToggleTodoResult,
+  handler: ({ id, completed }) =>
+    dbEffect(
+      Effect.gen(function* () {
+        const { db } = yield* ConfectMutationCtx;
+        yield* Policies.orFail(Policies.requireSignedIn);
+
+        yield* db.patch(id, { completed });
+
+        return null;
+      })
+    ),
 });
 
 export const deleteTodo = mutation({
-  args: {
-    id: v.id("todos"),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.delete("todos", args.id);
-    return { success: true };
-  },
+  args: DeleteTodoArgs,
+  returns: DeleteTodoResult,
+  handler: ({ id }) =>
+    dbEffect(
+      Effect.gen(function* () {
+        const { db } = yield* ConfectMutationCtx;
+        yield* Policies.orFail(Policies.requireSignedIn);
+
+        yield* db.delete(id);
+
+        return null;
+      })
+    ),
 });

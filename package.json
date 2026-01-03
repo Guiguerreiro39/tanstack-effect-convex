@@ -9,7 +9,6 @@
   "scripts": {
     "check": "oxlint && oxfmt --write",
     "prepare": "husky",
-    "ruler:apply": "pnpm dlx @intellectronica/ruler@latest apply --local-only",
     "dev": "turbo dev",
     "build": "turbo build",
     "check-types": "turbo check-types",
@@ -19,25 +18,25 @@
     "dev:setup": "turbo -F @tanstack-effect-convex/backend dev:setup"
   },
   "dependencies": {
-    "dotenv": "catalog:",
-    "zod": "catalog:",
-    "@tanstack-effect-convex/env": "workspace:*"
+    "@tanstack-effect-convex/env": "workspace:*",
+    "dotenv": "catalog:"
   },
   "devDependencies": {
-    "turbo": "^2.6.3",
     "@biomejs/biome": "2.3.10",
-    "ultracite": "6.5.1",
+    "@tanstack-effect-convex/config": "workspace:*",
+    "@types/node": "catalog:",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
-    "oxlint": "^1.34.0",
     "oxfmt": "^0.19.0",
+    "oxlint": "^1.34.0",
+    "turbo": "^2.6.3",
     "typescript": "catalog:",
-    "@tanstack-effect-convex/config": "workspace:*"
+    "ultracite": "6.5.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
       "pnpm dlx ultracite fix"
     ]
   },
-  "packageManager": "pnpm@10.19.0"
+  "packageManager": "pnpm@10.27.0"
 }

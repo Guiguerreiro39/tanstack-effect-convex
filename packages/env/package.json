@@ -6,13 +6,17 @@
   "exports": {
     "./web": "./src/web.ts"
   },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "dependencies": {
-    "zod": "catalog:",
     "@t3-oss/env-core": "^0.13.1",
-    "dotenv": "catalog:"
+    "dotenv": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "@tanstack-effect-convex/config": "workspace:*"
+    "@tanstack-effect-convex/config": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }

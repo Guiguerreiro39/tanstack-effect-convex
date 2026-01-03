@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Better-T-Stack Project Rules
 
 This is a tanstack-effect-convex project created with Better-T-Stack CLI.
@@ -24,8 +28,7 @@ Authentication is enabled in this project:
 You can add additional addons or deployment options to your project using:
 
 ```bash
-pnpx create-better-t-stack
-add
+pnpx create-better-t-stack add
 ```
 
 Available addons you can add:
@@ -52,5 +55,14 @@ This project includes a `bts.jsonc` configuration file that stores your Better-T
 - Run commands from the root to execute across all workspaces
 - Run workspace-specific commands with `pnpm run command-name`
 - Turborepo handles build caching and parallel execution
-- Use `pnpx
-create-better-t-stack add` to add more features later
+- Use `pnpx create-better-t-stack add` to add more features later
+- Use pnpm instead of npm for commands
+
+## Effect Best Practices
+
+**Before implementing Effect features**, run `effect-solutions list` and read the relevant guide.
+
+Topics include: services and layers, data modeling, error handling, configuration, testing, HTTP clients, CLIs, observability, and project structure.
+
+**Effect Source Reference:** `~/.local/share/effect`
+Search here to explore APIs, find usage examples, and understand implementation details when the documentation isn't enough.

@@ -3,7 +3,8 @@
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
-    "module": "ESNext",
+    "module": "esnext",
+    "moduleDetection": "force",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
 
@@ -11,18 +12,30 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
+    "rewriteRelativeImportExtensions": true,
     "noEmit": true,
+    "incremental": true,
+    "composite": true,
 
     /* Linting */
     "skipLibCheck": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "strict": true,
+    "exactOptionalPropertyTypes": false,
     "noUnusedLocals": true,
+    "noImplicitOverride": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   }
 }
