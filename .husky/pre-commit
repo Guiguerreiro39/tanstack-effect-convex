@@ -2,6 +2,8 @@
 # Exit on any error
 set -e
 
+pnpm run format
+
 # Check if there are any staged files
 if [ -z "$(git diff --cached --name-only)" ]; then
   echo "No staged files to format"
