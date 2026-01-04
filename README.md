@@ -1,6 +1,6 @@
 # tanstack-effect-convex
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Convex, and more.
+This project combines React, TanStack Start, Convex, Effect and more.
 
 ## Features
 
@@ -9,10 +9,11 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 - **TailwindCSS** - Utility-first CSS for rapid UI development
 - **shadcn/ui** - Reusable UI components
 - **Convex** - Reactive backend-as-a-service platform
+- **Confect** - Convex + Effect
+- **Effect** - Extensive library with a rich ecosystem of packages
 - **Authentication** - Better-Auth
 - **Turborepo** - Optimized monorepo build system
 - **Biome** - Linting and formatting
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
 - **Husky** - Git hooks for code quality
 
 ## Getting Started
