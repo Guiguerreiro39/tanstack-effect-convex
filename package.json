@@ -7,7 +7,7 @@
   ],
   "type": "module",
   "scripts": {
-    "format": "pnpm exec biome format --write",
+    "format": "pnpm dlx ultracite fix",
     "prepare": "husky",
     "dev": "turbo dev",
     "build": "turbo build",

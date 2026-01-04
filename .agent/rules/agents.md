@@ -1,52 +1,35 @@
 ---
-trigger: always_on
+trigger: glob
+globs: **/*.{ts,tsx,js,jsx,json,jsonc,html,vue,svelte,astro,css,yaml,yml,graphql,gql,md,mdx,grit}
 ---
 
-# Better-T-Stack Project Rules
+# Project Rules
 
-This is a tanstack-effect-convex project created with Better-T-Stack CLI.
+This is a typescript project that uses tanstack start, convex and effect.
 
 ## Project Structure
 
 This is a monorepo with the following structure:
 
-- **`apps/web/`** - Frontend application
+- **`apps/web/`** - Tanstack start frontend application
 
-- **`packages/backend/`** - Convex backend functions
+- **`packages/backend/`** - Convex backend functions with confect to seamingly integrate convex with effect.
 
 ## Available Scripts
 
 - `pnpm run dev` - Start all apps in development mode
 - `pnpm run dev:web` - Start only the web app
+- `pnpm run dev:server` - Start only the backend
+- `pnpm run format` - Format documents
 
 ## Authentication
 
-Authentication is enabled in this project:
+Authentication is enabled in this project. Use convex authentication functions in the frontend and policies inside `packages/backend/convex/lib/policies.ts` for the backend.
 
-## Adding More Features
+## Forms, validation and types
 
-You can add additional addons or deployment options to your project using:
-
-```bash
-pnpx create-better-t-stack add
-```
-
-Available addons you can add:
-
-- **Documentation**: Starlight, Fumadocs
-- **Linting**: Biome, Oxlint, Ultracite
-- **Other**: Ruler, Turborepo, PWA, Tauri, Husky
-
-You can also add web deployment configurations like Cloudflare Workers support.
-
-## Project Configuration
-
-This project includes a `bts.jsonc` configuration file that stores your Better-T-Stack settings:
-
-- Contains your selected stack configuration (database, ORM, backend, frontend, etc.)
-- Used by the CLI to understand your project structure
-- Safe to delete if not needed
-- Updated automatically when using the `add` command
+- Avoid using anything other than **Effect Schema** for validation and typing.
+- This project uses tanstack forms. When dealing with forms, use `Schema.standardSchemaV1` before defining the main form schema for compability.
 
 ## Key Points
 
@@ -55,7 +38,6 @@ This project includes a `bts.jsonc` configuration file that stores your Better-T
 - Run commands from the root to execute across all workspaces
 - Run workspace-specific commands with `pnpm run command-name`
 - Turborepo handles build caching and parallel execution
-- Use `pnpx create-better-t-stack add` to add more features later
 - Use pnpm instead of npm for commands
 
 ## Effect Best Practices
@@ -66,3 +48,6 @@ Topics include: services and layers, data modeling, error handling, configuratio
 
 **Effect Source Reference:** `~/.local/share/effect`
 Search here to explore APIs, find usage examples, and understand implementation details when the documentation isn't enough.
+
+**Confect Source Reference:** `~/.local/share/confect`
+Search here to find usage examples and understand how confect works when the documentation isn't enough.
