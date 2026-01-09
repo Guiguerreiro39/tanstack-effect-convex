@@ -51,3 +51,21 @@ Search here to explore APIs, find usage examples, and understand implementation 
 
 **Confect Source Reference:** `~/.local/share/confect`
 Search here to find usage examples and understand how confect works when the documentation isn't enough.
+
+## MCPs
+
+- Use context7 mcp for up to date documentation.
+- Use playwright mcp for testing the UI.
+
+## Frontend
+
+- Use shadcn/ui for UI components
+- Use TailwindCSS for styling
+- Use Effect Atom for global state management
+- Use Effect for molding the data from the backend
+
+## Backend
+
+- Use Confect for the backend when creating new endpoints
+- Use Convex for the database
+- Use Better-auth with convex auth for authentication
