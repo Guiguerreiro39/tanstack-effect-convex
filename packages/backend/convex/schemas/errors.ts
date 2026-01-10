@@ -10,6 +10,11 @@ export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{
   message?: string | undefined;
 }> {}
 
+export class UnknownError extends Data.TaggedError("UnknownError")<{
+  error: unknown;
+  docId?: Id<TableNames>;
+}> {}
+
 export class InvalidCtxError extends Data.TaggedError("InvalidCtxError") {}
 
 export class GetUserIdentityError extends Data.TaggedError(

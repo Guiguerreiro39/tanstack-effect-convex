@@ -1,12 +1,11 @@
-import { Effect, Schema } from "effect";
-import { dbEffect } from "@/lib/db-effect";
-import { query } from "./confect";
+import { Effect } from "effect";
+import { query } from "./_generated/server";
+import { runWithEffect } from "./lib/runtime";
 
 export const get = query({
-  args: Schema.Struct({}),
-  returns: Schema.String,
-  handler: () =>
-    dbEffect(
+  handler: (ctx) =>
+    runWithEffect(
+      ctx,
       Effect.gen(function* () {
         return yield* Effect.succeed("OK");
       })

@@ -1,29 +1,28 @@
-import { Effect, Option } from "effect";
-import { dbEffect } from "@/lib/db-effect";
-import { ConfectQueryCtx, query } from "./confect";
-import {
-  GetCurrentUserProfileArgs,
-  GetCurrentUserProfileResult,
-} from "./schemas/userProfiles";
+import { v } from "convex/values";
+import { Effect } from "effect";
+import { query } from "./_generated/server";
+import { runWithEffect } from "./lib/runtime";
+import { UnknownError } from "./schemas/errors";
 
 export const getCurrentProfile = query({
-  args: GetCurrentUserProfileArgs,
-  returns: GetCurrentUserProfileResult,
-  handler: ({ userId }) =>
-    dbEffect(
+  args: {
+    userId: v.string(),
+  },
+  handler: (ctx, args) =>
+    runWithEffect(
+      ctx,
       Effect.gen(function* () {
-        const { db } = yield* ConfectQueryCtx;
+        const userProfile = yield* Effect.tryPromise({
+          try: () =>
+            ctx.db
+              .query("userProfiles")
+              .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+              .unique(),
+          catch: () =>
+            Effect.fail(new UnknownError({ error: "User not found" })),
+        });
 
-        const userProfile = yield* db
-          .query("userProfiles")
-          .withIndex("by_userId", (q) => q.eq("userId", userId))
-          .unique();
-
-        if (Option.isNone(userProfile)) {
-          return null;
-        }
-
-        return userProfile.value;
+        return userProfile;
       })
     ),
 });

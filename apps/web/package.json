@@ -13,7 +13,6 @@
     "@base-ui/react": "^1.0.0",
     "@convex-dev/better-auth": "catalog:",
     "@convex-dev/react-query": "^0.1.0",
-    "@rjdellecese/confect": "catalog:",
     "@tailwindcss/vite": "^4.1.8",
     "@tanstack-effect-convex/backend": "workspace:*",
     "@tanstack-effect-convex/env": "workspace:*",

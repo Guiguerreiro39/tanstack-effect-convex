@@ -1,18 +1,9 @@
 import { convexQuery } from "@convex-dev/react-query";
-import { useMutation } from "@rjdellecese/confect/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { api } from "@tanstack-effect-convex/backend/convex/_generated/api";
 import type { Id } from "@tanstack-effect-convex/backend/convex/_generated/dataModel";
-import {
-  CreateTodoArgs,
-  CreateTodoResult,
-  DeleteTodoArgs,
-  DeleteTodoResult,
-  ToggleTodoArgs,
-  ToggleTodoResult,
-} from "@tanstack-effect-convex/backend/convex/schemas/todos";
-import { Effect } from "effect";
+import { useMutation } from "convex/react";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -33,67 +24,31 @@ export const Route = createFileRoute("/todos")({
 function TodosRoute() {
   const [newTodoText, setNewTodoText] = useState("");
 
-  const todosQuery = useSuspenseQuery(convexQuery(api.todos.getAll, {}));
+  const todosQuery = useSuspenseQuery(convexQuery(api.todos.getAll));
   const todos = todosQuery.data;
 
-  const createTodo = useMutation({
-    mutation: api.todos.create,
-    args: CreateTodoArgs,
-    returns: CreateTodoResult,
-  });
+  const createTodo = useMutation(api.todos.create);
+  const toggleTodo = useMutation(api.todos.toggle);
 
-  const toggleTodo = useMutation({
-    mutation: api.todos.toggle,
-    args: ToggleTodoArgs,
-    returns: ToggleTodoResult,
-  });
+  const removeTodo = useMutation(api.todos.deleteTodo);
 
-  const removeTodo = useMutation({
-    mutation: api.todos.deleteTodo,
-    args: DeleteTodoArgs,
-    returns: DeleteTodoResult,
-  });
+  const handleAddTodo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = newTodoText.trim();
 
-  const handleAddTodo = Effect.fn((e: React.FormEvent) =>
-    Effect.gen(function* () {
-      e.preventDefault();
-      const text = newTodoText.trim();
+    if (text) {
+      setNewTodoText("");
+      await createTodo({ text });
+    }
+  };
 
-      if (text) {
-        setNewTodoText("");
-        yield* createTodo({ text });
-      }
-    }).pipe(
-      Effect.catchAllCause((cause) => {
-        console.error("Failed to add todo:", cause);
-        setNewTodoText(newTodoText);
+  const handleToggleTodo = async (id: Id<"todos">, completed: boolean) => {
+    await toggleTodo({ id, completed: !completed });
+  };
 
-        return Effect.fail("Failed to add todo");
-      })
-    )
-  );
-
-  const handleToggleTodo = Effect.fn((id: Id<"todos">, completed: boolean) =>
-    Effect.gen(function* () {
-      yield* toggleTodo({ id, completed: !completed });
-    }).pipe(
-      Effect.catchAllCause((cause) => {
-        console.error("Failed to toggle todo:", cause);
-        return Effect.fail("Failed to toggle todo");
-      })
-    )
-  );
-
-  const handleDeleteTodo = Effect.fn((id: Id<"todos">) =>
-    Effect.gen(function* () {
-      yield* removeTodo({ id });
-    }).pipe(
-      Effect.catchAllCause((cause) => {
-        console.error("Failed to delete todo:", cause);
-        return Effect.fail("Failed to delete todo");
-      })
-    )
-  );
+  const handleDeleteTodo = async (id: Id<"todos">) => {
+    await removeTodo({ id });
+  };
 
   return (
     <div className="mx-auto w-full max-w-md py-10">

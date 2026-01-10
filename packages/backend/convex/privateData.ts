@@ -1,15 +1,12 @@
-import { Effect, Schema } from "effect";
-import { query } from "@/confect";
-import { CurrentSession } from "@/lib/current-session";
-import { dbEffect } from "@/lib/db-effect";
+import { Effect } from "effect";
+import { query } from "./_generated/server";
+import { CurrentSession } from "./lib/currentSession";
+import { runWithEffect } from "./lib/runtime";
 
 export const get = query({
-  args: Schema.Struct({}),
-  returns: Schema.Struct({
-    message: Schema.String,
-  }),
-  handler: () =>
-    dbEffect(
+  handler: (ctx) =>
+    runWithEffect(
+      ctx,
       Effect.gen(function* () {
         const session = yield* CurrentSession;
 
