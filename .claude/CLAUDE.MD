@@ -49,12 +49,12 @@ Topics include: services and layers, data modeling, error handling, configuratio
 **Effect Source Reference:** `~/.local/share/effect`
 Search here to explore APIs, find usage examples, and understand implementation details when the documentation isn't enough.
 
-**Confect Source Reference:** `~/.local/share/confect`
-Search here to find usage examples and understand how confect works when the documentation isn't enough.
-
-## MCPs
+## Documentation
 
 - Use context7 mcp for up to date documentation.
+
+## Testing
+
 - Use playwright mcp for testing the UI.
 
 ## Frontend
@@ -62,10 +62,8 @@ Search here to find usage examples and understand how confect works when the doc
 - Use shadcn/ui for UI components
 - Use TailwindCSS for styling
 - Use Effect Atom for global state management
-- Use Effect for molding the data from the backend
 
 ## Backend
 
-- Use Confect for the backend when creating new endpoints
 - Use Convex for the database
-- Use Better-auth with convex auth for authentication
+- Use Better-auth with convex for authentication
