@@ -9,7 +9,6 @@ This project combines React, TanStack Start, Convex, Effect and more.
 - **TailwindCSS** - Utility-first CSS for rapid UI development
 - **shadcn/ui** - Reusable UI components
 - **Convex** - Reactive backend-as-a-service platform
-- **Confect** - Convex + Effect
 - **Effect** - Extensive library with a rich ecosystem of packages
 - **Authentication** - Better-Auth
 - **Turborepo** - Optimized monorepo build system
