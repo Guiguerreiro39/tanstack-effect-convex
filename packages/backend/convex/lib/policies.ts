@@ -99,21 +99,28 @@ const orFail = <O, E, R>(
     })
   );
 
-// CUSTOM POLICIES
-
+/**
+ * Creates a policy from a type guard function.
+ * Returns the narrowed session type on success.
+ */
 const require = <T extends UserSession>(
   guard: (session: UserSession) => session is T
 ) => policy((session) => (guard(session) ? allow(session) : deny()));
 
+/** Type guard: user is not authenticated */
 function isSignedOut(session: UserSession): session is null {
   return session === null;
 }
 
+/** Type guard: user is authenticated */
 function isSignedIn(session: UserSession): session is UserIdentity {
   return session !== null;
 }
 
+/** Policy: requires user to NOT be authenticated */
 const requireSignedOut = require(isSignedOut);
+
+/** Policy: requires user to be authenticated, returns `UserIdentity` */
 const requireSignedIn = require(isSignedIn);
 
 export const Policies = {

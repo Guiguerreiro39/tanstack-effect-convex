@@ -3,6 +3,9 @@ import { Context, Effect, Option } from "effect";
 import type { DataModel } from "@/_generated/dataModel";
 import type { UserSession } from "@/schemas/auth";
 
+/**
+ * Fetches the current user session from Convex auth.
+ */
 export const fetchCurrentSession = Effect.fn("fetchCurrentSession")(function* (
   ctx: GenericQueryCtx<DataModel> | GenericMutationCtx<DataModel>
 ) {
@@ -14,6 +17,9 @@ export const fetchCurrentSession = Effect.fn("fetchCurrentSession")(function* (
   return identityResult;
 });
 
+/**
+ * Effect Context tag for the current user session.
+ */
 export class CurrentSession extends Context.Tag("CurrentSession")<
   CurrentSession,
   UserSession
