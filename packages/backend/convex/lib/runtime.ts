@@ -5,14 +5,15 @@ import { Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect";
 import type { DataModel } from "@/_generated/dataModel";
 import { CurrentSession } from "@/lib/currentSession";
 import type { ForbiddenError, NotFoundError } from "@/schemas/errors";
+import {
+  ErrorStatusMap,
+  type SerializedError,
+} from "@/schemas/serialized-errors";
 import { parseCurrentConvexEnvironment } from "./constants";
 import { fetchCurrentSession } from "./currentSession";
 
 /**
  * Minimum log level based on environment.
- * - `test`: `LogLevel.None`
- * - `development`: `LogLevel.Debug`
- * - `production`: `LogLevel.Info`
  */
 const MINIMUM_LOG_LEVEL = (() => {
   const environment = parseCurrentConvexEnvironment();
@@ -39,8 +40,48 @@ const RuntimeServer = (
   );
 
 /**
+ * Serializes a tagged error to a ConvexError with metadata.
+ */
+const serializeToConvexError = (error: unknown) => {
+  const e = error as { _tag?: string; [key: string]: unknown };
+  const tag = (e._tag ?? "UnknownError") as SerializedError["_tag"];
+  const status = ErrorStatusMap[tag] ?? 500;
+
+  // Build serialized error based on tag
+  let serialized: SerializedError;
+  switch (tag) {
+    case "NotFoundError":
+      serialized = {
+        _tag: tag,
+        docId: e.docId as undefined,
+        handle: e.handle as string | undefined,
+      };
+      break;
+    case "ForbiddenError":
+      serialized = { _tag: tag, message: e.message as string | undefined };
+      break;
+    case "UnknownError":
+      serialized = {
+        _tag: tag,
+        message: String(e.error ?? "Unknown error"),
+      };
+      break;
+    case "InvalidCtxError":
+      serialized = { _tag: tag };
+      break;
+    case "GetUserIdentityError":
+      serialized = { _tag: tag, message: String(e.error ?? "Auth error") };
+      break;
+    default:
+      serialized = { _tag: "UnknownError", message: `Unhandled error: ${tag}` };
+  }
+
+  return new ConvexError({ status, error: serialized });
+};
+
+/**
  * Runs an Effect in a Convex query or mutation context.
- * Provides `CurrentSession` and converts tagged errors to ConvexErrors.
+ * Provides `CurrentSession` and converts tagged errors to ConvexErrors with metadata.
  *
  * @example
  * ```ts
@@ -60,13 +101,7 @@ export const runWithEffect = <A, E>(
 ) =>
   RuntimeServer(ctx).runPromise(
     effect.pipe(
-      Effect.catchTag("ForbiddenError", () =>
-        Effect.die(new ConvexError({ kind: "authorization", status: 401 }))
-      ),
-      Effect.catchTag("NotFoundError", () =>
-        Effect.die(new ConvexError({ kind: "not-found", status: 404 }))
-      ),
-      // Log unknown error for visibility
+      Effect.catchAll((error) => Effect.die(serializeToConvexError(error))),
       Effect.tapError((error) => Effect.logError(error)),
       Logger.withMinimumLogLevel(MINIMUM_LOG_LEVEL)
     )
@@ -74,9 +109,6 @@ export const runWithEffect = <A, E>(
 
 /**
  * Runtime for internal queries and actions.
- * Internal functions don't have user session context, so we use a minimal runtime
- * that only provides logging. Each internal function gets its own runtime instance
- * since Convex doesn't allow sharing runtimes across function invocations.
  */
 const InternalRuntimeServer = ManagedRuntime.make(
   Layer.empty.pipe(Layer.merge(Logger.minimumLogLevel(MINIMUM_LOG_LEVEL)))
@@ -84,26 +116,6 @@ const InternalRuntimeServer = ManagedRuntime.make(
 
 /**
  * Run an Effect in an internal query or action context.
- * Use this for internalQuery, internalMutation, and internalAction.
- *
- * @example
- * ```ts
- * export const syncPrices = internalAction({
- *   args: { symbols: v.array(v.string()) },
- *   handler: async (ctx, args) =>
- *     runInternalEffect(
- *       Effect.gen(function* () {
- *         const prices = yield* fetchPricesFromAPI(args.symbols);
- *         for (const price of prices) {
- *           yield* Effect.promise(() =>
- *             ctx.runMutation(internal.stockPrices.upsertPrice, price)
- *           );
- *         }
- *         return prices.length;
- *       })
- *     ),
- * });
- * ```
  */
 export const runInternalEffect = <A, E>(effect: Effect.Effect<A, E, never>) =>
   InternalRuntimeServer.runPromise(
