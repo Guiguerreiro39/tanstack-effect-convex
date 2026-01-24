@@ -27,13 +27,24 @@ const extractConvexError = (
  *
  * @example
  * ```ts
+ * // Without inputValidator
+ * const getPosts = createServerFn({ method: "GET" }).handler(
+ *   withConvexErrorHandling(async () => {
+ *     return await fetchQuery(api.posts.getAll);
+ *   })
+ * );
+ *
+ * // With inputValidator - handler receives ctx with { data }
  * const getPost = createServerFn({ method: "GET" })
- *   .validator((data) => data as { postId: string })
+ *   .inputValidator((data) => data as { postId: string })
  *   .handler(
- *     withConvexErrorHandling(async ({ postId }) => {
- *       return await fetchQuery(api.posts.get, { id: postId });
+ *     withConvexErrorHandling(async (ctx: { data: { postId: string } }) => {
+ *       return await fetchQuery(api.posts.get, { id: ctx.data.postId });
  *     })
  *   );
+ *
+ * // Caller passes { data: { ... } }
+ * await getPost({ data: { postId: "123" } });
  * ```
  */
 export const withConvexErrorHandling = <Args, T>(

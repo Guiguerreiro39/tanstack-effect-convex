@@ -1,8 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { api } from "@tanstack-effect-convex/backend/convex/_generated/api";
 import type { Id } from "@tanstack-effect-convex/backend/convex/_generated/dataModel";
-import { useMutation } from "convex/react";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +13,10 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { createTodo } from "@/features/todos/api/create";
+import { deleteTodo } from "@/features/todos/api/delete";
 import { getAllTodos } from "@/features/todos/api/get-all";
+import { toggleTodo } from "@/features/todos/api/toggle";
 
 export const Route = createFileRoute("/todos")({
   component: TodosRoute,
@@ -23,15 +24,27 @@ export const Route = createFileRoute("/todos")({
 
 function TodosRoute() {
   const [newTodoText, setNewTodoText] = useState("");
+  const queryClient = useQueryClient();
 
   const todosQuery = useQuery({
     queryKey: ["todos"],
     queryFn: () => getAllTodos(),
   });
 
-  const createTodo = useMutation(api.todos.create);
-  const toggleTodo = useMutation(api.todos.toggle);
-  const removeTodo = useMutation(api.todos.deleteTodo);
+  const createMutation = useMutation({
+    mutationFn: createTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: toggleTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteTodo,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["todos"] }),
+  });
 
   const handleAddTodo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,16 +52,16 @@ function TodosRoute() {
 
     if (text) {
       setNewTodoText("");
-      await createTodo({ text });
+      await createMutation.mutateAsync({ data: { text } });
     }
   };
 
   const handleToggleTodo = async (id: Id<"todos">, completed: boolean) => {
-    await toggleTodo({ id, completed: !completed });
+    await toggleMutation.mutateAsync({ data: { id, completed: !completed } });
   };
 
   const handleDeleteTodo = async (id: Id<"todos">) => {
-    await removeTodo({ id });
+    await deleteMutation.mutateAsync({ data: { id } });
   };
 
   if (todosQuery.isLoading) {
@@ -90,8 +103,11 @@ function TodosRoute() {
               placeholder="Add a new task..."
               value={newTodoText}
             />
-            <Button disabled={!newTodoText.trim()} type="submit">
-              Add
+            <Button
+              disabled={!newTodoText.trim() || createMutation.isPending}
+              type="submit"
+            >
+              {createMutation.isPending ? "Adding..." : "Add"}
             </Button>
           </form>
 
