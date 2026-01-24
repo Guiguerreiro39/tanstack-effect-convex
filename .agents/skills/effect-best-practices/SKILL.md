@@ -438,10 +438,3 @@ Effect.gen(function* () {
 // ✅ Use Layers for services
 const ServiceLive = Layer.succeed(Service, { method: () => Effect.succeed(1) });
 ```
-
-## Reference Locations
-
-- Search `~/.local/share/effect` for Effect API usage
-- Search `~/.local/share/effect-atom` for Effect-Atom patterns (React state with Effect)
-- Run `effect-solutions list` before implementing new Effect features
-- Project errors: `packages/backend/convex/schemas/errors.ts`

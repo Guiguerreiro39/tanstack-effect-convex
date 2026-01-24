@@ -45,3 +45,8 @@
 
 - Search `~/.local/share/effect` for Effect API usage
 - Search `~/.local/share/effect-atom` for Effect-Atom patterns (React state with Effect)
+- Project errors: `packages/backend/convex/schemas/errors.ts`
+
+## Effect-ts
+
+- Run `effect-solutions list` before implementing new Effect features

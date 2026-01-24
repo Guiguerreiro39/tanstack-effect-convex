@@ -33,12 +33,16 @@ For each task:
 3. Run verifications as specified
 4. Mark as completed
 
-### Step 3: Report
+### Step 3: Report and Track Progress
 
 When batch complete:
 
 - Show what was implemented
 - Show verification output
+- **Create/update progress file** next to the plan:
+  - Name: `{plan-filename}-progress.md`
+  - Include: completed tasks, remaining tasks, known issues, files changed
+  - Purpose: enables fresh agents to resume work
 - Say: "Ready for feedback."
 
 ### Step 4: Continue
@@ -47,12 +51,14 @@ Based on feedback:
 
 - Apply changes if needed
 - Execute next batch
+- Update progress file after each batch
 - Repeat until complete
 
 ### Step 5: Complete Development
 
 After all tasks complete and verified:
 
+- Update progress file to mark plan as complete
 - Announce: "I'm using the finishing-a-development-branch skill to complete this work."
 - **REQUIRED SUB-SKILL:** Use superpowers:finishing-a-development-branch
 - Follow that skill to verify tests, present options, execute choice
