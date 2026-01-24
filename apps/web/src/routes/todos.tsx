@@ -1,5 +1,4 @@
-import { convexQuery } from "@convex-dev/react-query";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { api } from "@tanstack-effect-convex/backend/convex/_generated/api";
 import type { Id } from "@tanstack-effect-convex/backend/convex/_generated/dataModel";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { getAllTodos } from "@/features/todos/api/get-all";
 
 export const Route = createFileRoute("/todos")({
   component: TodosRoute,
@@ -24,12 +24,13 @@ export const Route = createFileRoute("/todos")({
 function TodosRoute() {
   const [newTodoText, setNewTodoText] = useState("");
 
-  const todosQuery = useSuspenseQuery(convexQuery(api.todos.getAll));
-  const todos = todosQuery.data;
+  const todosQuery = useQuery({
+    queryKey: ["todos"],
+    queryFn: () => getAllTodos(),
+  });
 
   const createTodo = useMutation(api.todos.create);
   const toggleTodo = useMutation(api.todos.toggle);
-
   const removeTodo = useMutation(api.todos.deleteTodo);
 
   const handleAddTodo = async (e: React.FormEvent) => {
@@ -49,6 +50,28 @@ function TodosRoute() {
   const handleDeleteTodo = async (id: Id<"todos">) => {
     await removeTodo({ id });
   };
+
+  if (todosQuery.isLoading) {
+    return <div className="mx-auto w-full max-w-md py-10">Loading...</div>;
+  }
+
+  if (todosQuery.data && !todosQuery.data.success) {
+    return (
+      <div className="mx-auto w-full max-w-md py-10">
+        <Card>
+          <CardHeader>
+            <CardTitle>Error</CardTitle>
+            <CardDescription>
+              {todosQuery.data.error._tag}:{" "}
+              {JSON.stringify(todosQuery.data.error)}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  const todos = todosQuery.data?.data ?? [];
 
   return (
     <div className="mx-auto w-full max-w-md py-10">
