@@ -48,7 +48,7 @@ function TodosRoute() {
     await deleteMutation.mutateAsync({ id });
   };
 
-  return matchEffect(todosQuery.dataEffect, {
+  return matchEffect(todosQuery, {
     onPending: () => (
       <div className="mx-auto w-full max-w-md py-10">Loading...</div>
     ),

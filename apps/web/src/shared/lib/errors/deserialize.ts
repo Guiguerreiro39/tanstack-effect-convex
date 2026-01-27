@@ -1,4 +1,4 @@
-import type { SerializedError } from "@/shared/lib/server-fn/types";
+import type { SerializedError } from "@/shared/lib/models/result";
 import {
   type AppError,
   ForbiddenError,
@@ -6,7 +6,7 @@ import {
   InvalidCtxError,
   NotFoundError,
   UnknownError,
-} from "./types";
+} from "../models/errors";
 
 /**
  * Deserializes a serialized error back to an Effect TaggedError.

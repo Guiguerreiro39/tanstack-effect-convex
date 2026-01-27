@@ -1,7 +1,7 @@
 import type { UserIdentity } from "convex/server";
 import { Effect, Either } from "effect";
-import type { UserSession } from "@/schemas/auth";
-import { ForbiddenError } from "@/schemas/errors";
+import type { UserSession } from "../schemas/auth";
+import { ForbiddenError } from "../schemas/errors";
 import { CurrentSession } from "./currentSession";
 
 /**

@@ -1,4 +1,6 @@
 import { Effect } from "effect";
+import type { UseEffectQueryResult } from "@/shared/lib/hooks/use-effect-query";
+import type { AppError } from "@/shared/lib/models/errors";
 import { RuntimeClient } from "@/shared/lib/runtime-client";
 
 /**
@@ -16,22 +18,22 @@ import { RuntimeClient } from "@/shared/lib/runtime-client";
  * });
  * ```
  */
-export function matchEffect<T, E, Ok, Err>(
-  effect: Effect.Effect<T, E> | null,
+export function matchEffect<T, Ok, Err>(
+  effectQuery: UseEffectQueryResult<T>,
   handlers: {
     readonly onPending: () => Ok | Err;
-    readonly onFailure: (error: E) => Err;
+    readonly onFailure: (error: AppError) => Err;
     readonly onSuccess: (data: T) => Ok;
-  },
+  }
 ): Ok | Err {
-  if (effect === null) {
+  if (effectQuery.isLoading || effectQuery.isRefetching) {
     return handlers.onPending();
   }
 
   return RuntimeClient.runSync(
-    Effect.match(effect, {
+    Effect.match(effectQuery.toEffect, {
       onFailure: handlers.onFailure,
       onSuccess: handlers.onSuccess,
-    }),
+    })
   );
 }

@@ -1,7 +1,7 @@
 import type { GenericMutationCtx, GenericQueryCtx } from "convex/server";
 import { Context, Effect, Option } from "effect";
-import type { DataModel } from "@/_generated/dataModel";
-import type { UserSession } from "@/schemas/auth";
+import type { DataModel } from "../_generated/dataModel";
+import type { UserSession } from "../schemas/auth";
 
 /**
  * Fetches the current user session from Convex auth.

@@ -7,11 +7,10 @@ import type {
 } from "convex/server";
 import { Effect } from "effect";
 import { extractConvexError } from "@/shared/lib/errors/extract-convex-error";
-import type { AppError } from "@/shared/lib/errors/types";
+import type { AppError } from "@/shared/lib/models/errors";
 
-type UseEffectQueryResult<T> = UseQueryResult<T, Error> & {
-  dataEffect: Effect.Effect<T, AppError> | null;
-  toEffect: () => Effect.Effect<T, AppError>;
+export type UseEffectQueryResult<T> = UseQueryResult<T, Error> & {
+  toEffect: Effect.Effect<T, AppError>;
 };
 
 /**
@@ -42,24 +41,17 @@ export function useEffectQuery<F extends FunctionReference<"query">>(
 ): UseEffectQueryResult<FunctionReturnType<F>> {
   const query = useQuery(convexQuery(funcRef, args));
 
-  const dataEffect = query.isPending
-    ? null
-    : query.error
-      ? Effect.fail(extractConvexError(query.error))
-      : Effect.succeed(query.data as FunctionReturnType<F>);
+  const toEffect = Effect.gen(function* () {
+    if (query.isPending) {
+      return yield* Effect.never;
+    }
 
-  const toEffect = (): Effect.Effect<FunctionReturnType<F>, AppError> =>
-    Effect.gen(function* () {
-      if (query.isPending) {
-        return yield* Effect.never;
-      }
+    if (query.error) {
+      return yield* Effect.fail(extractConvexError(query.error));
+    }
 
-      if (query.error) {
-        return yield* Effect.fail(extractConvexError(query.error));
-      }
+    return query.data;
+  });
 
-      return query.data as FunctionReturnType<F>;
-    });
-
-  return { ...query, dataEffect, toEffect };
+  return { ...query, toEffect };
 }

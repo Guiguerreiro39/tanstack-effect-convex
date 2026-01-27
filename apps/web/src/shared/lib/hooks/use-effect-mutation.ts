@@ -11,12 +11,11 @@ import type {
 } from "convex/server";
 import { Effect } from "effect";
 import { extractConvexError } from "@/shared/lib/errors/extract-convex-error";
-import type { AppError } from "@/shared/lib/errors/types";
+import type { AppError } from "@/shared/lib/models/errors";
 
 type UseEffectMutationResult<F extends FunctionReference<"mutation">> =
   UseMutationResult<FunctionReturnType<F>, Error, FunctionArgs<F>> & {
-    dataEffect: Effect.Effect<FunctionReturnType<F>, AppError> | null;
-    toEffect: () => Effect.Effect<FunctionReturnType<F>, AppError>;
+    toEffect: Effect.Effect<FunctionReturnType<F>, AppError>;
   };
 
 type Options<F extends FunctionReference<"mutation">> = Omit<
@@ -58,25 +57,17 @@ export function useEffectMutation<F extends FunctionReference<"mutation">>(
     ...options,
   });
 
-  const dataEffect =
-    mutation.isPending || mutation.isIdle
-      ? null
-      : mutation.error
-        ? Effect.fail(extractConvexError(mutation.error))
-        : Effect.succeed(mutation.data as FunctionReturnType<F>);
+  const toEffect = Effect.gen(function* () {
+    if (mutation.isPending || mutation.isIdle) {
+      return yield* Effect.never;
+    }
 
-  const toEffect = (): Effect.Effect<FunctionReturnType<F>, AppError> =>
-    Effect.gen(function* () {
-      if (mutation.isPending || mutation.isIdle) {
-        return yield* Effect.never;
-      }
+    if (mutation.error) {
+      return yield* Effect.fail(extractConvexError(mutation.error));
+    }
 
-      if (mutation.error) {
-        return yield* Effect.fail(extractConvexError(mutation.error));
-      }
+    return mutation.data;
+  });
 
-      return mutation.data as FunctionReturnType<F>;
-    });
-
-  return { ...mutation, dataEffect, toEffect };
+  return { ...mutation, toEffect };
 }

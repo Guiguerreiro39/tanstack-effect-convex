@@ -1,4 +1,4 @@
-import type { Id, TableNames } from "@/_generated/dataModel";
+import type { Id, TableNames } from "../_generated/dataModel";
 
 /**
  * Serialized error format for network transport.
