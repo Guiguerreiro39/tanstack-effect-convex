@@ -13,7 +13,8 @@ export const getAll = query({
       Effect.gen(function* () {
         return yield* Effect.tryPromise({
           try: () => ctx.db.query("todos").collect(),
-          catch: (error) => Effect.fail(new UnknownError({ error })),
+          catch: (error) =>
+            Effect.fail(new UnknownError({ message: String(error) })),
         });
       })
     ),
@@ -33,7 +34,8 @@ export const create = mutation({
               text: args.text,
               completed: false,
             }),
-          catch: (error) => Effect.fail(new UnknownError({ error })),
+          catch: (error) =>
+            Effect.fail(new UnknownError({ message: String(error) })),
         });
       })
     ),
@@ -52,7 +54,8 @@ export const toggle = mutation({
 
         yield* Effect.tryPromise({
           try: () => ctx.db.patch(args.id, { completed: args.completed }),
-          catch: (error) => Effect.fail(new UnknownError({ error })),
+          catch: (error) =>
+            Effect.fail(new UnknownError({ message: String(error) })),
         });
 
         return null;
@@ -73,7 +76,7 @@ export const deleteTodo = mutation({
         yield* Effect.tryPromise({
           try: () => ctx.db.delete(args.id),
           catch: (error) =>
-            Effect.fail(new UnknownError({ error, docId: args.id })),
+            Effect.fail(new UnknownError({ message: String(error) })),
         });
 
         return null;

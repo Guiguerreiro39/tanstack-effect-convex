@@ -49,10 +49,19 @@ const serializeToConvexError = (error: unknown) => {
   // Build serialized error based on tag
   let serialized: SerializedError;
   switch (tag) {
+    case "UnauthenticatedError":
+      serialized = { _tag: tag };
+      break;
+    case "NotAuthorizedError":
+      serialized = {
+        _tag: tag,
+        resource: e.resource as string,
+      };
+      break;
     case "NotFoundError":
       serialized = {
         _tag: tag,
-        docId: e.docId as undefined,
+        id: e.id as string | undefined,
         handle: e.handle as string | undefined,
       };
       break;
@@ -62,14 +71,14 @@ const serializeToConvexError = (error: unknown) => {
     case "UnknownError":
       serialized = {
         _tag: tag,
-        message: String(e.error ?? "Unknown error"),
+        message: String(e.message ?? "Unknown error"),
       };
       break;
     case "InvalidCtxError":
       serialized = { _tag: tag };
       break;
     case "GetUserIdentityError":
-      serialized = { _tag: tag, message: String(e.error ?? "Auth error") };
+      serialized = { _tag: tag, message: String(e.message ?? "Auth error") };
       break;
     default:
       serialized = { _tag: "UnknownError", message: `Unhandled error: ${tag}` };
