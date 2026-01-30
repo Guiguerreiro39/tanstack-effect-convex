@@ -106,10 +106,7 @@ export function generateErrorContract(input: ContractInput): string {
     "",
   ];
 
-  // Generate union type (can't be interface because it's a union)
-  lines.push(
-    "// biome-ignore lint/style/useConsistentTypeDefinitions: Union types cannot be interfaces"
-  );
+  // Generate union type
   if (errors.length === 0) {
     lines.push(`export type ${pascalName}Error = never;`);
   } else {
