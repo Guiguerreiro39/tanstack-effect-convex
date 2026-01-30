@@ -1,36 +1,25 @@
-import { Data } from "effect";
-
-/**
- * Frontend error classes mirroring backend TaggedErrors.
- * These are reconstructed from serialized errors.
- */
-export class NotFoundError extends Data.TaggedError("NotFoundError")<{
-  docId?: string;
-  handle?: string;
-}> {}
-
-export class ForbiddenError extends Data.TaggedError("ForbiddenError")<{
-  message?: string;
-}> {}
-
-export class UnknownError extends Data.TaggedError("UnknownError")<{
-  message: string;
-}> {}
-
-export class InvalidCtxError extends Data.TaggedError("InvalidCtxError") {}
-
-export class GetUserIdentityError extends Data.TaggedError(
-  "GetUserIdentityError"
-)<{
-  message: string;
-}> {}
+// apps/web/src/shared/lib/models/errors.ts
+// biome-ignore lint/performance/noBarrelFile: Re-export from shared for convenience
+export {
+  ForbiddenError,
+  GetUserIdentityError,
+  InvalidCtxError,
+  NotAuthorizedError,
+  NotFoundError,
+  type SerializedError,
+  UnauthenticatedError,
+  UnknownError,
+} from "@repo/shared/errors";
 
 /**
  * Union of all frontend error types.
+ * @deprecated Use scoped error types from generated contracts instead.
  */
 export type AppError =
-  | NotFoundError
-  | ForbiddenError
-  | UnknownError
-  | InvalidCtxError
-  | GetUserIdentityError;
+  | import("@repo/shared/errors").UnauthenticatedError
+  | import("@repo/shared/errors").NotAuthorizedError
+  | import("@repo/shared/errors").NotFoundError
+  | import("@repo/shared/errors").ForbiddenError
+  | import("@repo/shared/errors").UnknownError
+  | import("@repo/shared/errors").InvalidCtxError
+  | import("@repo/shared/errors").GetUserIdentityError;

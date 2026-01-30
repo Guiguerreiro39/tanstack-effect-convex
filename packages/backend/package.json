@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "convex dev",
     "dev:setup": "convex dev --configure --until-success",
-    "check-types": "tsc -p convex/tsconfig.json --noEmit"
+    "predev": "pnpm codegen:effect",
+    "check-types": "tsc -p convex/tsconfig.json --noEmit",
+    "codegen:effect": "tsx scripts/effect-codegen.ts"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
