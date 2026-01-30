@@ -1,0 +1,32 @@
+import { v } from "convex/values";
+import { Effect } from "effect";
+import { mutation } from "../_generated/server";
+import { Policies } from "../lib/policies";
+import { runWithEffect } from "../lib/runtime";
+import { ForbiddenError, UnknownError } from "../schemas/errors";
+
+/**
+ * Errors this mutation may throw.
+ */
+export const errors = [ForbiddenError, UnknownError] as const;
+
+export const toggle = mutation({
+  args: {
+    id: v.id("todos"),
+    completed: v.boolean(),
+  },
+  handler: (ctx, args) =>
+    runWithEffect(
+      ctx,
+      Effect.gen(function* () {
+        yield* Policies.orFail(Policies.requireSignedIn);
+
+        yield* Effect.tryPromise({
+          try: () => ctx.db.patch(args.id, { completed: args.completed }),
+          catch: (error) => new UnknownError({ message: String(error) }),
+        });
+
+        return null;
+      })
+    ),
+});
