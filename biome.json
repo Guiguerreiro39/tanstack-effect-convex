@@ -20,6 +20,7 @@
       "!**/wrangler.jsonc",
       "!**/.source",
       "!**/convex/_generated",
+      "!**/convex/lib/effect-contracts",
       "!**/.agents",
       "!**/.agent",
       "!**/.claude"
@@ -29,6 +30,9 @@
     "rules": {
       "style": {
         "useFilenamingConvention": "warn"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "off"
       }
     }
   },
