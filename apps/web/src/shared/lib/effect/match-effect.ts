@@ -1,7 +1,6 @@
 import { Effect } from "effect";
+import { RuntimeClient } from "@/shared/lib/effect/runtime-client";
 import type { UseEffectQueryResult } from "@/shared/lib/hooks/use-effect-query";
-import type { AppError } from "@/shared/lib/models/errors";
-import { RuntimeClient } from "@/shared/lib/runtime-client";
 
 /**
  * Pattern match on an Effect for pending, failure, and success states.
@@ -9,20 +8,22 @@ import { RuntimeClient } from "@/shared/lib/runtime-client";
  *
  * @example
  * ```tsx
- * const { dataEffect } = useEffectQuery(api.todos.getAll, {});
+ * import { getAllDescriptor } from "@backend/convex/lib/effect-contracts/todos/getAll";
  *
- * return matchEffect(dataEffect, {
+ * const todos = useEffectQuery(api.todos.getAll.getAll, getAllDescriptor, {});
+ *
+ * return matchEffect(todos, {
  *   onPending: () => <Spinner />,
  *   onFailure: (error) => <Error error={error} />,
  *   onSuccess: (todos) => <TodoList items={todos} />,
  * });
  * ```
  */
-export function matchEffect<T, Ok, Err>(
-  effectQuery: UseEffectQueryResult<T>,
+export function matchEffect<T, E, Ok, Err>(
+  effectQuery: UseEffectQueryResult<T, E>,
   handlers: {
     readonly onPending: () => Ok | Err;
-    readonly onFailure: (error: AppError) => Err;
+    readonly onFailure: (error: E) => Err;
     readonly onSuccess: (data: T) => Ok;
   }
 ): Ok | Err {
@@ -31,7 +32,7 @@ export function matchEffect<T, Ok, Err>(
   }
 
   return RuntimeClient.runSync(
-    Effect.match(effectQuery.toEffect, {
+    Effect.match(effectQuery.toEffect(), {
       onFailure: handlers.onFailure,
       onSuccess: handlers.onSuccess,
     })

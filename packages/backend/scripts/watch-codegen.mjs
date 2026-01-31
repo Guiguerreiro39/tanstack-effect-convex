@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import path from "node:path";
 import watcher from "@parcel/watcher";
 
-const dir = path.join(process.cwd(), "convex");
+const dir = path.join(process.cwd(), "src/convex");
 
 console.log(`🚀 Watching ${dir} for contract changes...`);
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { api } from "@tanstack-effect-convex/backend/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
 import {
   Authenticated,
   AuthLoading,

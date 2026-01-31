@@ -52,7 +52,7 @@ export const getAll = query({
       Effect.gen(function* () {
         return yield* Effect.tryPromise({
           try: () => ctx.db.query("todos").collect(),
-          catch: (_error) => new UnknownError({ message: "sdff" }),
+          catch: (error) => new UnknownError({ message: String(error) }),
         });
       })
     ),

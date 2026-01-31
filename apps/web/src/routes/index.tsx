@@ -1,7 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { api } from "@tanstack-effect-convex/backend/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({

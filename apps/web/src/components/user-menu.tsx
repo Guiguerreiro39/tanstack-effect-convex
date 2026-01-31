@@ -1,4 +1,4 @@
-import { api } from "@tanstack-effect-convex/backend/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
 import { useQuery } from "convex/react";
 
 import {

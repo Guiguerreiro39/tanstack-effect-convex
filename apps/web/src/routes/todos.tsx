@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { Id } from "@tanstack-effect-convex/backend/convex/_generated/dataModel";
+import type { Id } from "@tanstack-effect-convex/backend/src/convex/_generated/dataModel";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import { useCreateTodo } from "@/features/todos/api/create";
 import { useDeleteTodo } from "@/features/todos/api/delete";
 import { useTodos } from "@/features/todos/api/get-all";
 import { useToggleTodo } from "@/features/todos/api/toggle";
-import { matchEffect } from "@/shared/lib/hooks/match-effect";
+import { matchEffect } from "@/shared/lib/effect/match-effect";
 
 export const Route = createFileRoute("/todos")({
   component: TodosRoute,

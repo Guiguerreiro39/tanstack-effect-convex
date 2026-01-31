@@ -5,53 +5,80 @@ import type {
   FunctionReference,
   FunctionReturnType,
 } from "convex/server";
+import { ConvexError } from "convex/values";
 import { Effect } from "effect";
-import { extractConvexError } from "@/shared/lib/errors/extract-convex-error";
-import type { AppError } from "@/shared/lib/models/errors";
+import type { ErrorDescriptor } from "@/shared/model/errors";
 
-export type UseEffectQueryResult<T> = UseQueryResult<T, Error> & {
-  toEffect: Effect.Effect<T, AppError>;
+export type UseEffectQueryResult<T, E> = UseQueryResult<T, Error> & {
+  /**
+   * Returns Effect with scoped error type.
+   */
+  toEffect: () => Effect.Effect<T, E>;
 };
 
 /**
- * Convex query hook with Effect integration.
- * Wraps convexQuery and provides toEffect() for typed error handling.
+ * Convex query hook with scoped Effect error types.
+ *
+ * @param funcRef - Convex query function reference
+ * @param descriptor - Error descriptor from generated contracts (required)
+ * @param args - Query arguments
  *
  * @example
  * ```tsx
- * const todos = useEffectQuery(api.todos.getAll, {});
+ * import { api } from "@backend/_generated/api";
+ * import { getAllDescriptor, type GetAllError } from "@backend/convex/lib/effect-contracts/todos/getAll";
+ *
+ * const todos = useEffectQuery(api.todos.getAll.getAll, getAllDescriptor, {});
  *
  * // Standard React Query pattern
  * if (todos.isPending) return <Loading />;
  * if (todos.error) return <Error error={todos.error} />;
  * return <List items={todos.data} />;
  *
- * // Or use Effect pattern
- * const effect = todos.toEffect().pipe(
- *   Effect.match({
- *     onFailure: (error) => <Error error={error} />,
- *     onSuccess: (data) => <List items={data} />,
- *   })
- * );
+ * // Or use Effect pattern with scoped error types
+ * matchEffect(todos.toEffect(), {
+ *   Pending: () => <Loading />,
+ *   Failure: (err) => <Error error={err} />,
+ *   Success: (data) => <List items={data} />,
+ * });
  * ```
  */
-export function useEffectQuery<F extends FunctionReference<"query">>(
+export function useEffectQuery<F extends FunctionReference<"query">, E>(
   funcRef: F,
+  descriptor: ErrorDescriptor<E>,
   args: FunctionArgs<F>
-): UseEffectQueryResult<FunctionReturnType<F>> {
+): UseEffectQueryResult<FunctionReturnType<F>, E> {
   const query = useQuery(convexQuery(funcRef, args));
 
-  const toEffect = Effect.gen(function* () {
-    if (query.isPending) {
-      return yield* Effect.never;
-    }
+  const toEffect = (): Effect.Effect<FunctionReturnType<F>, E> =>
+    Effect.gen(function* () {
+      if (query.isPending) {
+        return yield* Effect.never;
+      }
 
-    if (query.error) {
-      return yield* Effect.fail(extractConvexError(query.error));
-    }
+      if (query.error) {
+        // Extract ConvexError data and decode with scoped decoder
+        const convexErr = query.error;
 
-    return query.data;
-  });
+        if (convexErr instanceof ConvexError) {
+          const data = convexErr.data;
+          const errorData =
+            typeof data === "object" && data !== null && "error" in data
+              ? data.error
+              : data;
+          const decoded = descriptor.decode(errorData);
+          if (decoded) {
+            return yield* Effect.fail(decoded);
+          }
+        }
+        // If decode fails, throw - contract violation
+        throw new Error(
+          `Error contract violation in ${descriptor.path}: received undeclared error`
+        );
+      }
+
+      return query.data;
+    });
 
   return { ...query, toEffect };
 }

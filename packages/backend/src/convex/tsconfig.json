@@ -3,15 +3,5 @@
    * Convex functions run in and is used to typecheck them.
    * You can modify it, but some settings are required to use Convex.
    */
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    /* Convex specific overrides */
-    "lib": ["ES2021", "dom"],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["../*"]
-    }
-  },
-  "include": ["./**/*"],
-  "exclude": ["./_generated"]
+  "extends": "../../tsconfig.json"
 }
