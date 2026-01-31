@@ -261,7 +261,7 @@ export function generateErrorContract(input: ContractInput): string {
   if (errors.length > 0) {
     const errorTags = [...new Set(errors.map((e) => e.tag))].sort();
     lines.push(
-      `import { ${errorTags.join(", ")} } from "@/convex/schemas/errors";`
+      `import { ${errorTags.join(", ")} } from "../../convex/schemas/errors";`
     );
     lines.push("");
   }
