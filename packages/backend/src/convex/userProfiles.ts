@@ -18,8 +18,7 @@ export const getCurrentProfile = query({
               .query("userProfiles")
               .withIndex("by_userId", (q) => q.eq("userId", args.userId))
               .unique(),
-          catch: () =>
-            Effect.fail(new UnknownError({ message: "User not found" })),
+          catch: () => new UnknownError({ message: "User not found" }),
         });
 
         return userProfile;

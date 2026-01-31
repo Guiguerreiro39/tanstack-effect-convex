@@ -5,15 +5,14 @@
   "license": "ISC",
   "author": "",
   "scripts": {
-    "dev": "convex dev",
+    "dev": "concurrently \"convex dev\" \"node scripts/watch-codegen.mjs\"",
     "dev:setup": "convex dev --configure --until-success",
-    "predev": "pnpm codegen:effect",
-    "check-types": "tsc -p convex/tsconfig.json --noEmit",
-    "codegen:effect": "tsx scripts/effect-codegen.ts"
+    "check-types": "tsc -p src/convex/tsconfig.json --noEmit",
+    "codegen:contract": "tsx scripts/contract-codegen.ts",
+    "predev": "pnpm codegen:contract"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
-    "@repo/shared": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",
     "dotenv": "catalog:",
@@ -21,8 +20,12 @@
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
+    "@parcel/watcher": "^2.5.6",
     "@tanstack-effect-convex/config": "workspace:*",
     "@types/node": "catalog:",
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^9.2.1",
+    "ts-morph": "^27.0.2",
     "typescript": "catalog:"
   }
 }

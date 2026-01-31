@@ -260,7 +260,9 @@ export function generateErrorContract(input: ContractInput): string {
 
   if (errors.length > 0) {
     const errorTags = [...new Set(errors.map((e) => e.tag))].sort();
-    lines.push(`import { ${errorTags.join(", ")} } from "@/schemas/errors";`);
+    lines.push(
+      `import { ${errorTags.join(", ")} } from "@/convex/schemas/errors";`
+    );
     lines.push("");
   }
 
@@ -381,7 +383,12 @@ function shouldSkipFile(name: string): boolean {
 
 /** Checks if directory should be skipped */
 function shouldSkipDir(name: string): boolean {
-  return name.startsWith("_") || name === "lib" || name === "schemas";
+  return (
+    name.startsWith("_") ||
+    name === "lib" ||
+    name === "schemas" ||
+    name === "contracts"
+  );
 }
 
 function findConvexFiles(
@@ -417,9 +424,9 @@ function findConvexFiles(
 }
 
 function main() {
-  const convexDir = path.resolve(__dirname, "../convex");
+  const convexDir = path.resolve(__dirname, "../src/convex");
   const errorsFile = path.join(convexDir, "schemas/errors.ts");
-  const outputDir = path.join(convexDir, "lib/contracts");
+  const outputDir = path.join(__dirname, "../src/contracts");
   const tsconfigPath = path.join(convexDir, "tsconfig.json");
 
   console.log("Scanning Convex functions for error contracts...\n");
@@ -444,11 +451,19 @@ function main() {
     project.addSourceFileAtPath(filePath);
   }
 
-  // Clean output directory
-  if (fs.existsSync(outputDir)) {
-    fs.rmSync(outputDir, { recursive: true });
+  // No longer cleaning the output directory with fs.rmSync to prevent deleting files
+  // that we might want to keep if we switch to a "write if changed" strategy.
+  // Instead, we ensure the directory exists.
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
   }
-  fs.mkdirSync(outputDir, { recursive: true });
+
+  // Remove the old directory if it exists
+  const oldOutputDir = path.join(__dirname, "../src/contracts");
+  if (fs.existsSync(oldOutputDir)) {
+    console.log(`  Removing old directory: ${oldOutputDir}`);
+    fs.rmSync(oldOutputDir, { recursive: true });
+  }
 
   const generated: string[] = [];
 
@@ -482,12 +497,23 @@ function main() {
       fs.mkdirSync(outDir, { recursive: true });
 
       const outFile = path.join(outDir, `${fn.functionName}.ts`);
-      fs.writeFileSync(outFile, code);
+
+      let shouldWrite = true;
+      if (fs.existsSync(outFile)) {
+        const existingContent = fs.readFileSync(outFile, "utf-8");
+        if (existingContent === code) {
+          shouldWrite = false;
+        }
+      }
+
+      if (shouldWrite) {
+        fs.writeFileSync(outFile, code);
+      }
 
       const relativeToConvex = path.relative(convexDir, outFile);
       const relativeToOutput = path.relative(outputDir, outFile);
       console.log(
-        `  Generated: ${relativeToConvex} [${fn.errorTags.join(", ") || "no errors"}]`
+        `  ${shouldWrite ? "Generated" : "Skipped (no change)"}: ${relativeToConvex} [${fn.errorTags.join(", ") || "no errors"}]`
       );
       generated.push(relativeToOutput);
     }
@@ -511,8 +537,23 @@ function main() {
   }
   indexLines.push("");
 
-  fs.writeFileSync(path.join(outputDir, "index.ts"), indexLines.join("\n"));
-  console.log("\n  Generated: lib/contracts/index.ts");
+  const indexFile = path.join(outputDir, "index.ts");
+  const newIndexContent = indexLines.join("\n");
+
+  let shouldWriteIndex = true;
+  if (
+    fs.existsSync(indexFile) &&
+    fs.readFileSync(indexFile, "utf-8") === newIndexContent
+  ) {
+    shouldWriteIndex = false;
+  }
+
+  if (shouldWriteIndex) {
+    fs.writeFileSync(indexFile, newIndexContent);
+    console.log("\n  Generated: contracts/index.ts");
+  } else {
+    console.log("\n  Skipped: contracts/index.ts (no change)");
+  }
 
   console.log(`\nDone! Generated ${generated.length} error contracts.`);
 }
