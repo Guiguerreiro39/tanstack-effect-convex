@@ -1,5 +1,6 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { type UseQueryResult, useQuery } from "@tanstack/react-query";
+import type { ErrorDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
 import type {
   FunctionArgs,
   FunctionReference,
@@ -7,7 +8,6 @@ import type {
 } from "convex/server";
 import { ConvexError } from "convex/values";
 import { Effect } from "effect";
-import type { ErrorDescriptor } from "@/shared/model/errors";
 
 export type UseEffectQueryResult<T, E> = UseQueryResult<T, Error> & {
   /**

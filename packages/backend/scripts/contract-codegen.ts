@@ -39,6 +39,99 @@ interface ContractInput {
   errors: ErrorDef[];
 }
 
+// -----------------------------------------------------------------------------
+// Convex -> Effect Schema Type Mapping
+// -----------------------------------------------------------------------------
+
+interface ConvexFieldDef {
+  name: string;
+  type: string; // e.g., "v.string()", "v.optional(v.string())"
+  optional: boolean;
+}
+
+const CONVEX_TO_EFFECT_MAP: Record<string, string> = {
+  "v.string()": "Schema.String",
+  "v.boolean()": "Schema.Boolean",
+  "v.number()": "Schema.Number",
+  "v.int64()": "Schema.BigInt",
+  "v.float64()": "Schema.Number",
+  "v.bytes()": "Schema.Uint8ArrayFromSelf",
+  "v.null()": "Schema.Null",
+  "v.any()": "Schema.Unknown",
+};
+
+const V_OPTIONAL_REGEX = /^v\.optional\((.+)\)$/;
+const V_ARRAY_REGEX = /^v\.array\((.+)\)$/;
+const V_UNION_REGEX = /^v\.union\((.+)\)$/;
+const V_ID_REGEX = /^v\.id\(["'](\w+)["']\)$/;
+const V_LITERAL_REGEX = /^v\.literal\((.+)\)$/;
+
+function parseUnionArgs(argsStr: string): string[] {
+  const results: string[] = [];
+  let depth = 0;
+  let current = "";
+
+  for (const char of argsStr) {
+    if (char === "(" || char === "[" || char === "{") {
+      depth++;
+      current += char;
+    } else if (char === ")" || char === "]" || char === "}") {
+      depth--;
+      current += char;
+    } else if (char === "," && depth === 0) {
+      results.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+
+  if (current.trim()) {
+    results.push(current.trim());
+  }
+
+  return results;
+}
+
+function convexTypeToEffectSchema(convexType: string): string {
+  // Handle v.optional(...)
+  const optionalMatch = convexType.match(V_OPTIONAL_REGEX);
+  if (optionalMatch) {
+    const inner = convexTypeToEffectSchema(optionalMatch[1]);
+    return `Schema.optional(${inner})`;
+  }
+
+  // Handle v.array(...)
+  const arrayMatch = convexType.match(V_ARRAY_REGEX);
+  if (arrayMatch) {
+    const inner = convexTypeToEffectSchema(arrayMatch[1]);
+    return `Schema.Array(${inner})`;
+  }
+
+  // Handle v.union(...)
+  const unionMatch = convexType.match(V_UNION_REGEX);
+  if (unionMatch) {
+    const innerTypes = parseUnionArgs(unionMatch[1]);
+    const mapped = innerTypes.map(convexTypeToEffectSchema);
+    return `Schema.Union(${mapped.join(", ")})`;
+  }
+
+  // Handle v.id("tableName")
+  const idMatch = convexType.match(V_ID_REGEX);
+  if (idMatch) {
+    return "Schema.String"; // Foreign refs stay as plain string
+  }
+
+  // Handle v.literal(...)
+  const literalMatch = convexType.match(V_LITERAL_REGEX);
+  if (literalMatch) {
+    return `Schema.Literal(${literalMatch[1]})`;
+  }
+
+  // Direct mapping
+  return CONVEX_TO_EFFECT_MAP[convexType] ?? "Schema.Unknown";
+}
+
 /**
  * Extracts all Error Tag definitions from the schema.
  */
@@ -84,6 +177,68 @@ function extractAllErrorFields(
     }
   }
   return result;
+}
+
+// -----------------------------------------------------------------------------
+// Table Schema Extraction
+// -----------------------------------------------------------------------------
+
+interface TableSchemaDef {
+  name: string;
+  fields: ConvexFieldDef[];
+}
+
+/**
+ * Extracts table shape definitions from schema.ts.
+ * Looks for exported object literals like: export const Todo = { text: v.string(), ... }
+ */
+function extractTableSchemas(
+  project: Project,
+  schemaFilePath: string
+): TableSchemaDef[] {
+  const sourceFile = project.addSourceFileAtPath(schemaFilePath);
+  const results: TableSchemaDef[] = [];
+
+  const exported = sourceFile.getExportedDeclarations();
+  for (const [name, decls] of exported) {
+    if (name === "default" || name.endsWith("Schema")) {
+      continue;
+    }
+
+    for (const decl of decls) {
+      if (!Node.isVariableDeclaration(decl)) {
+        continue;
+      }
+
+      const initializer = decl.getInitializer();
+      if (!(initializer && Node.isObjectLiteralExpression(initializer))) {
+        continue;
+      }
+
+      const fields: ConvexFieldDef[] = [];
+      for (const prop of initializer.getProperties()) {
+        if (!Node.isPropertyAssignment(prop)) {
+          continue;
+        }
+
+        const propName = prop.getName();
+        const valueTxt = prop.getInitializer()?.getText() ?? "v.any()";
+        const optional = valueTxt.startsWith("v.optional");
+
+        fields.push({
+          name: propName,
+          type: valueTxt,
+          optional,
+        });
+      }
+
+      if (fields.length > 0) {
+        results.push({ name, fields });
+      }
+    }
+  }
+
+  return results;
 }
 
 // -----------------------------------------------------------------------------
@@ -246,25 +401,91 @@ function moduleToPascalCase(modulePath: string): string {
 }
 
 /**
- * Generates error contract code for a Convex function.
+ * Converts PascalCase to kebab-case for file names.
  */
-export function generateErrorContract(input: ContractInput): string {
+function toKebabCase(str: string): string {
+  return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+}
+
+/**
+ * Generates Effect.Schema code for a table definition.
+ * Creates both a base schema (for input validation) and full schema (with system fields).
+ */
+function generateDataSchema(table: TableSchemaDef): string {
+  const lines: string[] = [
+    "// AUTO-GENERATED by contract-codegen - DO NOT EDIT",
+    "",
+    'import { Schema } from "effect";',
+    "",
+  ];
+
+  // Generate branded ID type
+  const idName = `${table.name}Id`;
+  lines.push(
+    `export const ${idName} = Schema.String.pipe(Schema.brand("${idName}"));`
+  );
+  lines.push(`export type ${idName} = typeof ${idName}.Type;`);
+  lines.push("");
+
+  // Generate base schema (without system fields)
+  lines.push(`export const ${table.name}Base = Schema.Struct({`);
+  for (const field of table.fields) {
+    const effectType = convexTypeToEffectSchema(field.type);
+    lines.push(`  ${field.name}: ${effectType},`);
+  }
+  lines.push("});");
+  lines.push("");
+
+  // Generate full schema (with system fields)
+  lines.push(`export const ${table.name} = Schema.Struct({`);
+  lines.push(`  _id: ${idName},`);
+  lines.push("  _creationTime: Schema.Number,");
+  for (const field of table.fields) {
+    const effectType = convexTypeToEffectSchema(field.type);
+    lines.push(`  ${field.name}: ${effectType},`);
+  }
+  lines.push("});");
+  lines.push("");
+
+  // Type exports
+  lines.push(`export type ${table.name}Base = typeof ${table.name}Base.Type;`);
+  lines.push(`export type ${table.name} = typeof ${table.name}.Type;`);
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+/**
+ * Generates error contract code for a Convex function.
+ * @param depth - How many directories deep from contracts/errors/ (e.g., "todos/create" = 1)
+ */
+export function generateErrorContract(
+  input: ContractInput,
+  depth: number
+): string {
   const { modulePath, errors } = input;
   // Use full module path for unique type names (e.g., TodosCreateError)
   const pascalPrefix = moduleToPascalCase(modulePath);
+
+  // Calculate relative path prefix: from errors/{depth}/ to contracts/
+  // depth=1 means we're at errors/todos/fn.ts, so we need "../.." to get to contracts/
+  const upDirs = "../".repeat(depth + 1); // +1 for "errors" dir
+  const typesImport = `${upDirs}types`;
+  const errorsImport = `${upDirs}../convex/schemas/errors`;
 
   const lines: string[] = [
     "// AUTO-GENERATED by contract-codegen - DO NOT EDIT",
     "",
   ];
 
+  // Import ErrorDescriptor type for descriptor typing
+  lines.push(`import type { ErrorDescriptor } from "${typesImport}";`);
+
   if (errors.length > 0) {
     const errorTags = [...new Set(errors.map((e) => e.tag))].sort();
-    lines.push(
-      `import { ${errorTags.join(", ")} } from "@/convex/schemas/errors";`
-    );
-    lines.push("");
+    lines.push(`import { ${errorTags.join(", ")} } from "${errorsImport}";`);
   }
+  lines.push("");
 
   // Generate union type
   if (errors.length === 0) {
@@ -347,11 +568,13 @@ export function generateErrorContract(input: ContractInput): string {
   lines.push(` * Error descriptor for ${modulePath}.`);
   lines.push(" * Pass to useEffectMutation/useEffectQuery for typed errors.");
   lines.push(" */");
-  lines.push(`export const ${camelDescriptorName}Descriptor = {`);
-  lines.push(`  path: "${modulePath}" as const,`);
+  lines.push(
+    `export const ${camelDescriptorName}Descriptor: ErrorDescriptor<${pascalPrefix}Error> = {`
+  );
+  lines.push(`  path: "${modulePath}",`);
   lines.push("  allowedTags,");
   lines.push(`  decode: decode${pascalPrefix}Error,`);
-  lines.push("} as const;");
+  lines.push("};");
   lines.push("");
 
   return lines.join("\n");
@@ -426,7 +649,10 @@ function findConvexFiles(
 function main() {
   const convexDir = path.resolve(__dirname, "../src/convex");
   const errorsFile = path.join(convexDir, "schemas/errors.ts");
-  const outputDir = path.join(__dirname, "../src/contracts");
+  const schemaFile = path.join(convexDir, "schema.ts");
+  const contractsDir = path.join(__dirname, "../src/contracts");
+  const errorsOutputDir = path.join(contractsDir, "errors");
+  const schemasOutputDir = path.join(contractsDir, "schemas");
   const tsconfigPath = path.join(convexDir, "tsconfig.json");
 
   console.log("Scanning Convex functions for error contracts...\n");
@@ -451,19 +677,11 @@ function main() {
     project.addSourceFileAtPath(filePath);
   }
 
-  // No longer cleaning the output directory with fs.rmSync to prevent deleting files
-  // that we might want to keep if we switch to a "write if changed" strategy.
-  // Instead, we ensure the directory exists.
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
+  // Clean and recreate errors directory
+  if (fs.existsSync(errorsOutputDir)) {
+    fs.rmSync(errorsOutputDir, { recursive: true });
   }
-
-  // Remove the old directory if it exists
-  const oldOutputDir = path.join(__dirname, "../src/contracts");
-  if (fs.existsSync(oldOutputDir)) {
-    console.log(`  Removing old directory: ${oldOutputDir}`);
-    fs.rmSync(oldOutputDir, { recursive: true });
-  }
+  fs.mkdirSync(errorsOutputDir, { recursive: true });
 
   const generated: string[] = [];
 
@@ -486,76 +704,92 @@ function main() {
       // Full path is {fileName}/{functionName} (e.g., "todos/create")
       const fullModulePath = `${modulePath}/${fn.functionName}`;
 
-      const code = generateErrorContract({
-        functionName: fn.functionName,
-        modulePath: fullModulePath,
-        errors,
-      });
+      // Calculate depth: number of path segments in modulePath
+      // e.g., "todos" = 1, "todos.subfolder" = 2
+      const depth = modulePath.split(".").length;
 
-      // Create output path: contracts/{fileName}/{functionName}.ts
-      const outDir = path.join(outputDir, modulePath);
+      const code = generateErrorContract(
+        {
+          functionName: fn.functionName,
+          modulePath: fullModulePath,
+          errors,
+        },
+        depth
+      );
+
+      // Create output path: contracts/errors/{fileName}/{functionName}.ts
+      const outDir = path.join(errorsOutputDir, modulePath);
       fs.mkdirSync(outDir, { recursive: true });
 
-      const outFile = path.join(outDir, `${fn.functionName}.ts`);
+      const kebabFnName = toKebabCase(fn.functionName);
+      const outFile = path.join(outDir, `${kebabFnName}.ts`);
+      fs.writeFileSync(outFile, code);
 
-      let shouldWrite = true;
-      if (fs.existsSync(outFile)) {
-        const existingContent = fs.readFileSync(outFile, "utf-8");
-        if (existingContent === code) {
-          shouldWrite = false;
-        }
-      }
-
-      if (shouldWrite) {
-        fs.writeFileSync(outFile, code);
-      }
-
-      const relativeToConvex = path.relative(convexDir, outFile);
-      const relativeToOutput = path.relative(outputDir, outFile);
+      const relativeToOutput = path.relative(errorsOutputDir, outFile);
       console.log(
-        `  ${shouldWrite ? "Generated" : "Skipped (no change)"}: ${relativeToConvex} [${fn.errorTags.join(", ") || "no errors"}]`
+        `  Generated: errors/${relativeToOutput} [${fn.errorTags.join(", ") || "no errors"}]`
       );
       generated.push(relativeToOutput);
     }
   }
 
-  // Generate index file (barrel file intentional for generated contracts)
-  const indexLines = [
+  // -------------------------------------------------------------------------
+  // Generate data schemas
+  // -------------------------------------------------------------------------
+  console.log("\nGenerating data schemas from schema.ts...\n");
+
+  const schemas = extractTableSchemas(project, schemaFile);
+
+  // Clean and recreate schemas directory
+  if (fs.existsSync(schemasOutputDir)) {
+    fs.rmSync(schemasOutputDir, { recursive: true });
+  }
+  fs.mkdirSync(schemasOutputDir, { recursive: true });
+
+  const generatedSchemas: string[] = [];
+
+  for (const table of schemas) {
+    const code = generateDataSchema(table);
+    const fileName = `${toKebabCase(table.name)}.ts`;
+    const outFile = path.join(schemasOutputDir, fileName);
+
+    fs.writeFileSync(outFile, code);
+    console.log(`  Generated: schemas/${fileName}`);
+    generatedSchemas.push(fileName);
+  }
+
+  // -------------------------------------------------------------------------
+  // Generate main contracts/index.ts (no intermediate barrel files)
+  // -------------------------------------------------------------------------
+  const mainIndexLines = [
     "// AUTO-GENERATED by contract-codegen - DO NOT EDIT",
-    "",
+    "// biome-ignore-all lint/performance/noBarrelFile: intentional for generated API",
+    'export * from "./types";',
   ];
 
-  if (generated.length > 0) {
-    indexLines.push(
-      "// biome-ignore lint/performance/noBarrelFile: intentional for generated API"
-    );
-  }
-
+  // Add error contract exports
   for (const file of generated) {
-    const importPath = `./${file.replace(TS_EXT_REGEX, "").replace(BACKSLASH_REGEX, "/")}`;
-    indexLines.push(`export * from "${importPath}";`);
-  }
-  indexLines.push("");
-
-  const indexFile = path.join(outputDir, "index.ts");
-  const newIndexContent = indexLines.join("\n");
-
-  let shouldWriteIndex = true;
-  if (
-    fs.existsSync(indexFile) &&
-    fs.readFileSync(indexFile, "utf-8") === newIndexContent
-  ) {
-    shouldWriteIndex = false;
+    const importPath = `./errors/${file.replace(TS_EXT_REGEX, "").replace(BACKSLASH_REGEX, "/")}`;
+    mainIndexLines.push(`export * from "${importPath}";`);
   }
 
-  if (shouldWriteIndex) {
-    fs.writeFileSync(indexFile, newIndexContent);
-    console.log("\n  Generated: contracts/index.ts");
-  } else {
-    console.log("\n  Skipped: contracts/index.ts (no change)");
+  // Add schema exports
+  for (const file of generatedSchemas) {
+    const importPath = `./schemas/${file.replace(TS_EXT_REGEX, "")}`;
+    mainIndexLines.push(`export * from "${importPath}";`);
   }
 
-  console.log(`\nDone! Generated ${generated.length} error contracts.`);
+  mainIndexLines.push("");
+
+  fs.writeFileSync(
+    path.join(contractsDir, "index.ts"),
+    mainIndexLines.join("\n")
+  );
+  console.log("\nGenerated: contracts/index.ts");
+
+  console.log(
+    `\nDone! Generated ${generated.length} error contracts and ${generatedSchemas.length} data schemas.`
+  );
 }
 
 main();

@@ -3,6 +3,7 @@ import {
   type UseMutationResult,
   useMutation,
 } from "@tanstack/react-query";
+import type { ErrorDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
 import { useConvex } from "convex/react";
 import type {
   FunctionArgs,
@@ -11,7 +12,6 @@ import type {
 } from "convex/server";
 import { ConvexError } from "convex/values";
 import { Effect } from "effect";
-import type { ErrorDescriptor } from "@/shared/model/errors";
 
 type UseEffectMutationResult<
   F extends FunctionReference<"mutation">,
