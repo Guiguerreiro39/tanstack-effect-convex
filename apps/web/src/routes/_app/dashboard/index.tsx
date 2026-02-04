@@ -12,7 +12,7 @@ import SignInForm from "@/components/sign-in-form";
 import SignUpForm from "@/components/sign-up-form";
 import UserMenu from "@/components/user-menu";
 
-export const Route = createFileRoute("/dashboard/")({
+export const Route = createFileRoute("/_app/dashboard/")({
   component: RouteComponent,
 });
 

@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_app/")({
   component: HomeComponent,
 });
 

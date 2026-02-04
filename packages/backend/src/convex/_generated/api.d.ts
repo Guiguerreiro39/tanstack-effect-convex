@@ -18,6 +18,7 @@ import type * as lib_runtime from "../lib/runtime.js";
 import type * as privateData from "../privateData.js";
 import type * as schemas_auth from "../schemas/auth.js";
 import type * as schemas_errors from "../schemas/errors.js";
+import type * as telemetryAction from "../telemetryAction.js";
 import type * as todos from "../todos.js";
 import type * as userProfiles from "../userProfiles.js";
 
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   privateData: typeof privateData;
   "schemas/auth": typeof schemas_auth;
   "schemas/errors": typeof schemas_errors;
+  telemetryAction: typeof telemetryAction;
   todos: typeof todos;
   userProfiles: typeof userProfiles;
 }>;

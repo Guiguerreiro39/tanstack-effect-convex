@@ -18,7 +18,7 @@ import { useTodos } from "@/features/todos/api/get-all";
 import { useToggleTodo } from "@/features/todos/api/toggle";
 import { matchEffect } from "@/shared/lib/effect/match-effect";
 
-export const Route = createFileRoute("/todos/")({
+export const Route = createFileRoute("/_app/todos/")({
   component: TodosRoute,
 });
 
