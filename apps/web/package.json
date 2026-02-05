@@ -7,14 +7,16 @@
     "serve": "vite preview",
     "dev": "vite dev",
     "check-types": "tsc --noEmit",
-    "prepare": "effect-language-service patch"
+    "prepare": "effect-language-service patch",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@convex-dev/better-auth": "catalog:",
+    "@convex-dev/react-query": "^0.1.0",
     "@radix-ui/react-checkbox": "^1.1.4",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
-    "@convex-dev/better-auth": "catalog:",
-    "@convex-dev/react-query": "^0.1.0",
     "@tailwindcss/vite": "^4.1.8",
     "@tanstack-effect-convex/backend": "workspace:*",
     "@tanstack-effect-convex/env": "workspace:*",
@@ -44,16 +46,20 @@
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
+    "@effect/vitest": "^0.27.0",
     "@tanstack-effect-convex/config": "workspace:*",
     "@tanstack/react-router-devtools": "^1.141.1",
     "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.2.0",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "^5.0.4",
+    "happy-dom": "^20.5.0",
     "jsdom": "^26.0.0",
     "typescript": "catalog:",
     "vite": "^7.0.2",
+    "vitest": "^4.0.18",
     "web-vitals": "^5.0.3"
   }
 }
