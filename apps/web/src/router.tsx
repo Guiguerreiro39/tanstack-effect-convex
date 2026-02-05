@@ -4,7 +4,7 @@ import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
 import { env } from "@tanstack-effect-convex/env/web";
 
-import Loader from "./components/loader";
+import { Loader } from "./shared/ui/loader";
 import "./index.css";
 import { routeTree } from "./routeTree.gen";
 

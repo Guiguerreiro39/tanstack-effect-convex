@@ -1,6 +1,5 @@
-import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
-import { useQuery } from "convex/react";
-
+import { authClient } from "@/shared/lib/auth-client";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,13 +8,11 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { authClient } from "@/lib/auth-client";
+} from "@/shared/ui/dropdown-menu";
+import { useCurrentUser } from "../api/get-current-user";
 
-import { Button } from "./ui/button";
-
-export default function UserMenu() {
-  const user = useQuery(api.auth.getCurrentUser);
+export function UserMenu() {
+  const user = useCurrentUser();
 
   return (
     <DropdownMenu>

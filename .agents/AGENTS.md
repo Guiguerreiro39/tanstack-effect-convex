@@ -29,6 +29,7 @@
 - **convex.md** — Backend & auth
 - **react-tanstack.md** — React & forms
 - **code-style.md** — Coding standards
+- **solid.md** — SOLID principles
 
 ## Skills
 

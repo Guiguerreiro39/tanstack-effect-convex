@@ -2,17 +2,17 @@ import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { Schema } from "effect";
 import { toast } from "sonner";
-import { authClient } from "@/lib/auth-client";
-import { Email } from "@/lib/schema-utils";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { authClient } from "@/shared/lib/auth-client";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
+import { SignInSchema } from "../model/schemas";
 
-export default function SignInForm({
-  onSwitchToSignUp,
-}: {
+interface SignInFormProps {
   onSwitchToSignUp: () => void;
-}) {
+}
+
+export function SignInForm({ onSwitchToSignUp }: SignInFormProps) {
   const navigate = useNavigate({
     from: "/",
   });
@@ -42,16 +42,7 @@ export default function SignInForm({
       );
     },
     validators: {
-      onSubmit: Schema.standardSchemaV1(
-        Schema.Struct({
-          email: Email,
-          password: Schema.String.pipe(
-            Schema.minLength(8, {
-              message: () => "Password must be at least 8 characters",
-            })
-          ),
-        })
-      ),
+      onSubmit: Schema.standardSchemaV1(SignInSchema),
     },
   });
 
