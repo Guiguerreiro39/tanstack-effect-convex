@@ -1,34 +1,34 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { type UseQueryResult, useQuery } from "@tanstack/react-query";
-import type { ErrorDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
-import type {
-  FunctionArgs,
-  FunctionReference,
-  FunctionReturnType,
-} from "convex/server";
+import {
+  type FunctionDescriptor,
+  SchemaDecodeError,
+} from "@tanstack-effect-convex/backend/src/contracts";
+import type { FunctionArgs, FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 export type UseEffectQueryResult<T, E> = UseQueryResult<T, Error> & {
   /**
    * Returns Effect with scoped error type.
+   * Will fail with E for declared errors, or SchemaDecodeError if data validation fails.
    */
-  toEffect: () => Effect.Effect<T, E>;
+  toEffect: () => Effect.Effect<T, E | SchemaDecodeError>;
 };
 
 /**
- * Convex query hook with scoped Effect error types.
+ * Convex query hook with scoped Effect error types and data validation.
  *
  * @param funcRef - Convex query function reference
- * @param descriptor - Error descriptor from generated contracts (required)
+ * @param descriptor - Function descriptor from generated contracts (required)
  * @param args - Query arguments
  *
  * @example
  * ```tsx
  * import { api } from "@backend/_generated/api";
- * import { getAllDescriptor, type GetAllError } from "@backend/convex/lib/effect-contracts/todos/getAll";
+ * import { todosGetAllDescriptor, type TodosGetAllError } from "@backend/contracts";
  *
- * const todos = useEffectQuery(api.todos.getAll.getAll, getAllDescriptor, {});
+ * const todos = useEffectQuery(api.todos.getAll, todosGetAllDescriptor, {});
  *
  * // Standard React Query pattern
  * if (todos.isPending) return <Loading />;
@@ -43,14 +43,14 @@ export type UseEffectQueryResult<T, E> = UseQueryResult<T, Error> & {
  * });
  * ```
  */
-export function useEffectQuery<F extends FunctionReference<"query">, E>(
+export function useEffectQuery<F extends FunctionReference<"query">, A, E>(
   funcRef: F,
-  descriptor: ErrorDescriptor<E>,
+  descriptor: FunctionDescriptor<A, E>,
   args: FunctionArgs<F>
-): UseEffectQueryResult<FunctionReturnType<F>, E> {
+): UseEffectQueryResult<A, E> {
   const query = useQuery(convexQuery(funcRef, args));
 
-  const toEffect = (): Effect.Effect<FunctionReturnType<F>, E> =>
+  const toEffect = (): Effect.Effect<A, E | SchemaDecodeError> =>
     Effect.gen(function* () {
       if (query.isPending) {
         return yield* Effect.never;
@@ -66,7 +66,7 @@ export function useEffectQuery<F extends FunctionReference<"query">, E>(
             typeof data === "object" && data !== null && "error" in data
               ? data.error
               : data;
-          const decoded = descriptor.decode(errorData);
+          const decoded = descriptor.decodeError(errorData);
           if (decoded) {
             return yield* Effect.fail(decoded);
           }
@@ -77,8 +77,22 @@ export function useEffectQuery<F extends FunctionReference<"query">, E>(
         );
       }
 
-      return query.data;
+      // Validate data against schema
+      const parseResult = Schema.decodeUnknownEither(descriptor.dataSchema)(
+        query.data
+      );
+
+      if (parseResult._tag === "Left") {
+        return yield* Effect.fail(
+          new SchemaDecodeError({
+            path: descriptor.path,
+            cause: parseResult.left,
+          })
+        );
+      }
+
+      return parseResult.right;
     });
 
-  return { ...query, toEffect };
+  return { ...query, toEffect } as UseEffectQueryResult<A, E>;
 }

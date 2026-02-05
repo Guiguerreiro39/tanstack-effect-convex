@@ -2,9 +2,6 @@
 
 import { Schema } from "effect";
 
-export const UserProfileId = Schema.String.pipe(Schema.brand("UserProfileId"));
-export type UserProfileId = typeof UserProfileId.Type;
-
 export const UserProfileBase = Schema.Struct({
   userId: Schema.String,
   name: Schema.optional(Schema.String),
@@ -12,7 +9,7 @@ export const UserProfileBase = Schema.Struct({
 });
 
 export const UserProfile = Schema.Struct({
-  _id: UserProfileId,
+  _id: Schema.String,
   _creationTime: Schema.Number,
   userId: Schema.String,
   name: Schema.optional(Schema.String),

@@ -1,11 +1,23 @@
-// Error descriptor for typed error contracts.
+// Function descriptor for typed error contracts and data schema validation.
 // Used by generated contracts and the useEffectMutation/useEffectQuery hooks.
 
+import { Data, type Schema } from "effect";
+
 /**
- * Error descriptor from generated contracts.
+ * Error thrown when data schema decoding fails.
  */
-export interface ErrorDescriptor<E> {
+export class SchemaDecodeError extends Data.TaggedError("SchemaDecodeError")<{
+  readonly path: string;
+  readonly cause: unknown;
+}> {}
+
+/**
+ * Full function descriptor for typed Convex function contracts.
+ * Includes both error decoding and data schema validation.
+ */
+export interface FunctionDescriptor<A, E, I = A> {
   readonly path: string;
   readonly allowedTags: readonly string[];
-  readonly decode: (e: unknown) => E | undefined;
+  readonly decodeError: (e: unknown) => E | undefined;
+  readonly dataSchema: Schema.Schema<A, I>;
 }

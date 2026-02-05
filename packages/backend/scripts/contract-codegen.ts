@@ -27,6 +27,7 @@ interface ErrorDef {
 interface ScannedFunction {
   functionName: string;
   errorTags: string[];
+  returnType: string | null; // e.g., "Doc<\"todos\">[]" or "Doc<\"todos\">" or null
 }
 
 interface ScannedFile {
@@ -65,6 +66,12 @@ const V_ARRAY_REGEX = /^v\.array\((.+)\)$/;
 const V_UNION_REGEX = /^v\.union\((.+)\)$/;
 const V_ID_REGEX = /^v\.id\(["'](\w+)["']\)$/;
 const V_LITERAL_REGEX = /^v\.literal\((.+)\)$/;
+// Patterns for expanded return types from ts-morph
+// Matches: { _id: Id<"todos"> ... }[] or similar
+const ID_IN_OBJECT_ARRAY_REGEX =
+  /_id:\s*(?:import\([^)]+\)\.)?Id<["'](\w+)["']>.*}\[\]/;
+// Matches: { _id: Id<"todos"> ... } or similar
+const ID_IN_OBJECT_REGEX = /_id:\s*(?:import\([^)]+\)\.)?Id<["'](\w+)["']>/;
 
 function parseUnionArgs(argsStr: string): string[] {
   const results: string[] = [];
@@ -184,13 +191,15 @@ function extractAllErrorFields(
 // -----------------------------------------------------------------------------
 
 interface TableSchemaDef {
-  name: string;
+  name: string; // Schema export name (e.g., "Todo")
+  tableName: string; // Actual table name (e.g., "todos")
   fields: ConvexFieldDef[];
 }
 
 /**
  * Extracts table shape definitions from schema.ts.
  * Looks for exported object literals like: export const Todo = { text: v.string(), ... }
+ * Also extracts table names from defineSchema({ todos: defineTable(Todo), ... })
  */
 function extractTableSchemas(
   project: Project,
@@ -199,6 +208,80 @@ function extractTableSchemas(
   const sourceFile = project.addSourceFileAtPath(schemaFilePath);
   const results: TableSchemaDef[] = [];
 
+  // First, extract schema name -> table name mapping from defineSchema
+  const schemaNameToTableName: Record<string, string> = {};
+
+  sourceFile.forEachDescendant((node) => {
+    // Look for defineSchema({ tableName: defineTable(SchemaName), ... })
+    if (!Node.isCallExpression(node)) {
+      return;
+    }
+
+    const expr = node.getExpression();
+    if (!Node.isIdentifier(expr) || expr.getText() !== "defineSchema") {
+      return;
+    }
+
+    const args = node.getArguments();
+    if (args.length === 0) {
+      return;
+    }
+
+    const schemaObj = args[0];
+    if (!(schemaObj && Node.isObjectLiteralExpression(schemaObj))) {
+      return;
+    }
+
+    for (const prop of schemaObj.getProperties()) {
+      if (!Node.isPropertyAssignment(prop)) {
+        continue;
+      }
+
+      const tableName = prop.getName();
+      const value = prop.getInitializer();
+
+      if (!value) {
+        continue;
+      }
+
+      // Handle both direct defineTable() and chained defineTable().index()
+      let defineTableCall = value;
+
+      // If it's a call expression, check if it's defineTable or a chained method
+      if (Node.isCallExpression(defineTableCall)) {
+        const callExpr = defineTableCall.getExpression();
+
+        // Check if the call expression is a property access (chained call)
+        if (Node.isPropertyAccessExpression(callExpr)) {
+          // This is something like defineTable(X).index(...) - get the base call
+          const baseExpr = callExpr.getExpression();
+          if (Node.isCallExpression(baseExpr)) {
+            defineTableCall = baseExpr;
+          }
+        }
+      }
+
+      // Now check if this is defineTable(SchemaName)
+      if (Node.isCallExpression(defineTableCall)) {
+        const finalExpr = defineTableCall.getExpression();
+        if (
+          Node.isIdentifier(finalExpr) &&
+          finalExpr.getText() === "defineTable"
+        ) {
+          const tableArgs = defineTableCall.getArguments();
+          if (tableArgs.length > 0 && tableArgs[0]) {
+            const firstArg = tableArgs[0];
+            if (Node.isIdentifier(firstArg)) {
+              const schemaName = firstArg.getText();
+              schemaNameToTableName[schemaName] = tableName;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Now extract the schema definitions
   const exported = sourceFile.getExportedDeclarations();
   for (const [name, decls] of exported) {
     if (name === "default" || name.endsWith("Schema")) {
@@ -233,7 +316,11 @@ function extractTableSchemas(
       }
 
       if (fields.length > 0) {
-        results.push({ name, fields });
+        results.push({
+          name,
+          tableName: schemaNameToTableName[name] ?? name.toLowerCase(),
+          fields,
+        });
       }
     }
   }
@@ -319,8 +406,11 @@ export function scanConvexFile(
     return null;
   }
 
-  // Map: functionName -> errorTags[]
-  const functionErrors = new Map<string, string[]>();
+  // Map: functionName -> { errorTags[], returnType }
+  const functionErrors = new Map<
+    string,
+    { errorTags: string[]; returnType: string | null }
+  >();
 
   sourceFile.forEachDescendant((node) => {
     // Look for call expressions
@@ -358,14 +448,29 @@ export function scanConvexFile(
 
     const effectType = effectArg.getType();
 
-    // Effect.Effect<A, E, R> - we need E (second type argument)
+    // Effect.Effect<A, E, R> - A is success, E is error
     const typeArgs = effectType.getTypeArguments();
+    let returnType: string | null = null;
+
+    if (typeArgs.length >= 1) {
+      const successType = typeArgs[0];
+      if (successType) {
+        returnType = successType.getText();
+      }
+    }
+
     if (typeArgs.length >= 2) {
       const errorType = typeArgs[1];
       if (errorType) {
         const tags = extractErrorTagsFromType(errorType, errorFields);
-        const existing = functionErrors.get(functionName) ?? [];
-        functionErrors.set(functionName, [...existing, ...tags]);
+        const existing = functionErrors.get(functionName) ?? {
+          errorTags: [],
+          returnType: null,
+        };
+        functionErrors.set(functionName, {
+          errorTags: [...existing.errorTags, ...tags],
+          returnType: returnType ?? existing.returnType,
+        });
       }
     }
   });
@@ -375,8 +480,12 @@ export function scanConvexFile(
   }
 
   const functions: ScannedFunction[] = [];
-  for (const [functionName, errorTags] of functionErrors) {
-    functions.push({ functionName, errorTags: [...new Set(errorTags)] });
+  for (const [functionName, data] of functionErrors) {
+    functions.push({
+      functionName,
+      errorTags: [...new Set(data.errorTags)],
+      returnType: data.returnType,
+    });
   }
 
   return { functions };
@@ -408,6 +517,74 @@ function toKebabCase(str: string): string {
 }
 
 /**
+ * Maps Convex return types to Effect Schema imports.
+ * Handles Doc<"tableName">, Doc<"tableName">[], null, and primitives.
+ */
+interface SchemaMapping {
+  schemaName: string;
+  schemaImport: string | null; // null = no import needed (built-in)
+  isArray: boolean;
+  isNull: boolean;
+}
+
+function mapReturnTypeToSchema(
+  returnType: string | null,
+  tableSchemas: TableSchemaDef[]
+): SchemaMapping {
+  // Handle null/void returns
+  if (!returnType || returnType === "null" || returnType === "void") {
+    return {
+      schemaName: "Schema.Null",
+      schemaImport: null,
+      isArray: false,
+      isNull: true,
+    };
+  }
+
+  // Handle { _id: Id<"tableName"> ... }[] (array of docs - expanded type)
+  const arrayIdMatch = returnType.match(ID_IN_OBJECT_ARRAY_REGEX);
+  if (arrayIdMatch) {
+    const extractedTableName = arrayIdMatch[1];
+    const schema = tableSchemas.find(
+      (t) => t.tableName.toLowerCase() === extractedTableName?.toLowerCase()
+    );
+    if (schema) {
+      return {
+        schemaName: schema.name,
+        schemaImport: toKebabCase(schema.name),
+        isArray: true,
+        isNull: false,
+      };
+    }
+  }
+
+  // Handle { _id: Id<"tableName"> ... } (single doc - expanded type)
+  const singleIdMatch = returnType.match(ID_IN_OBJECT_REGEX);
+  if (singleIdMatch && !returnType.endsWith("[]")) {
+    const extractedTableName = singleIdMatch[1];
+    const schema = tableSchemas.find(
+      (t) => t.tableName.toLowerCase() === extractedTableName?.toLowerCase()
+    );
+    if (schema) {
+      return {
+        schemaName: schema.name,
+        schemaImport: toKebabCase(schema.name),
+        isArray: false,
+        isNull: false,
+      };
+    }
+  }
+
+  // Fallback: unknown type -> Schema.Unknown
+  return {
+    schemaName: "Schema.Unknown",
+    schemaImport: null,
+    isArray: false,
+    isNull: false,
+  };
+}
+
+/**
  * Generates Effect.Schema code for a table definition.
  * Creates both a base schema (for input validation) and full schema (with system fields).
  */
@@ -419,14 +596,6 @@ function generateDataSchema(table: TableSchemaDef): string {
     "",
   ];
 
-  // Generate branded ID type
-  const idName = `${table.name}Id`;
-  lines.push(
-    `export const ${idName} = Schema.String.pipe(Schema.brand("${idName}"));`
-  );
-  lines.push(`export type ${idName} = typeof ${idName}.Type;`);
-  lines.push("");
-
   // Generate base schema (without system fields)
   lines.push(`export const ${table.name}Base = Schema.Struct({`);
   for (const field of table.fields) {
@@ -437,8 +606,9 @@ function generateDataSchema(table: TableSchemaDef): string {
   lines.push("");
 
   // Generate full schema (with system fields)
+  // Using Schema.String for _id since Convex IDs are strings at runtime
   lines.push(`export const ${table.name} = Schema.Struct({`);
-  lines.push(`  _id: ${idName},`);
+  lines.push("  _id: Schema.String,");
   lines.push("  _creationTime: Schema.Number,");
   for (const field of table.fields) {
     const effectType = convexTypeToEffectSchema(field.type);
@@ -456,14 +626,16 @@ function generateDataSchema(table: TableSchemaDef): string {
 }
 
 /**
- * Generates error contract code for a Convex function.
+ * Generates function contract code for a Convex function.
+ * Includes both error decoding and data schema validation.
  * @param depth - How many directories deep from contracts/errors/ (e.g., "todos/create" = 1)
  */
-export function generateErrorContract(
-  input: ContractInput,
-  depth: number
+export function generateFunctionContract(
+  input: ContractInput & { returnType: string | null },
+  depth: number,
+  tableSchemas: TableSchemaDef[]
 ): string {
-  const { modulePath, errors } = input;
+  const { modulePath, errors, returnType } = input;
   // Use full module path for unique type names (e.g., TodosCreateError)
   const pascalPrefix = moduleToPascalCase(modulePath);
 
@@ -473,18 +645,29 @@ export function generateErrorContract(
   const typesImport = `${upDirs}types`;
   const errorsImport = `${upDirs}../convex/schemas/errors`;
 
+  // Map return type to schema
+  const schemaMapping = mapReturnTypeToSchema(returnType, tableSchemas);
+
   const lines: string[] = [
     "// AUTO-GENERATED by contract-codegen - DO NOT EDIT",
     "",
   ];
 
-  // Import ErrorDescriptor type for descriptor typing
-  lines.push(`import type { ErrorDescriptor } from "${typesImport}";`);
+  // Import FunctionDescriptor type for descriptor typing
+  lines.push(`import type { FunctionDescriptor } from "${typesImport}";`);
+  lines.push(`import { Schema } from "effect";`);
 
   if (errors.length > 0) {
     const errorTags = [...new Set(errors.map((e) => e.tag))].sort();
     lines.push(`import { ${errorTags.join(", ")} } from "${errorsImport}";`);
   }
+
+  // Import data schema if needed
+  if (schemaMapping.schemaImport) {
+    const schemaPath = `${upDirs}schemas/${schemaMapping.schemaImport}`;
+    lines.push(`import { ${schemaMapping.schemaName} } from "${schemaPath}";`);
+  }
+
   lines.push("");
 
   // Generate union type
@@ -561,19 +744,37 @@ export function generateErrorContract(
   lines.push("};");
   lines.push("");
 
-  // Generate descriptor - use camelCase of full path to avoid conflicts
+  // Build data schema expression
+  let dataSchemaExpr: string;
+  if (schemaMapping.isNull) {
+    dataSchemaExpr = "Schema.Null";
+  } else if (schemaMapping.isArray) {
+    dataSchemaExpr = `Schema.Array(${schemaMapping.schemaName})`;
+  } else {
+    dataSchemaExpr = schemaMapping.schemaName;
+  }
+
+  // Define the data schema as a const so we can use typeof on it
+  lines.push(`const dataSchema = ${dataSchemaExpr};`);
+  lines.push("");
+
+  // Generate FunctionDescriptor - use camelCase of full path to avoid conflicts
   const camelDescriptorName =
     pascalPrefix.charAt(0).toLowerCase() + pascalPrefix.slice(1);
   lines.push("/**");
-  lines.push(` * Error descriptor for ${modulePath}.`);
-  lines.push(" * Pass to useEffectMutation/useEffectQuery for typed errors.");
+  lines.push(` * Function descriptor for ${modulePath}.`);
+  lines.push(" * Includes both error decoding and data schema validation.");
   lines.push(" */");
   lines.push(
-    `export const ${camelDescriptorName}Descriptor: ErrorDescriptor<${pascalPrefix}Error> = {`
+    `export const ${camelDescriptorName}Descriptor: FunctionDescriptor<`
   );
+  lines.push("  typeof dataSchema.Type,");
+  lines.push(`  ${pascalPrefix}Error`);
+  lines.push("> = {");
   lines.push(`  path: "${modulePath}",`);
   lines.push("  allowedTags,");
-  lines.push(`  decode: decode${pascalPrefix}Error,`);
+  lines.push(`  decodeError: decode${pascalPrefix}Error,`);
+  lines.push("  dataSchema,");
   lines.push("};");
   lines.push("");
 
@@ -655,9 +856,9 @@ function main() {
   const schemasOutputDir = path.join(contractsDir, "schemas");
   const tsconfigPath = path.join(convexDir, "tsconfig.json");
 
-  console.log("Scanning Convex functions for error contracts...\n");
+  console.log("Scanning Convex functions for function contracts...\n");
   console.log(
-    "Using TypeScript compiler to extract error types from runWithEffect calls.\n"
+    "Using TypeScript compiler to extract error and return types from runWithEffect calls.\n"
   );
 
   // Initialize ts-morph project
@@ -670,6 +871,36 @@ function main() {
   console.log("  Extracting error definitions...");
   const errorFields = extractAllErrorFields(project, errorsFile);
   console.log(`  Found ${Object.keys(errorFields).length} error types.\n`);
+
+  // -------------------------------------------------------------------------
+  // Generate data schemas FIRST (needed for function contracts)
+  // -------------------------------------------------------------------------
+  console.log("Generating data schemas from schema.ts...\n");
+
+  const tableSchemas = extractTableSchemas(project, schemaFile);
+
+  // Clean and recreate schemas directory
+  if (fs.existsSync(schemasOutputDir)) {
+    fs.rmSync(schemasOutputDir, { recursive: true });
+  }
+  fs.mkdirSync(schemasOutputDir, { recursive: true });
+
+  const generatedSchemas: string[] = [];
+
+  for (const table of tableSchemas) {
+    const code = generateDataSchema(table);
+    const fileName = `${toKebabCase(table.name)}.ts`;
+    const outFile = path.join(schemasOutputDir, fileName);
+
+    fs.writeFileSync(outFile, code);
+    console.log(`  Generated: schemas/${fileName}`);
+    generatedSchemas.push(fileName);
+  }
+
+  // -------------------------------------------------------------------------
+  // Generate function contracts
+  // -------------------------------------------------------------------------
+  console.log("\nGenerating function contracts...\n");
 
   // Add source files
   const files = findConvexFiles(convexDir);
@@ -708,13 +939,15 @@ function main() {
       // e.g., "todos" = 1, "todos.subfolder" = 2
       const depth = modulePath.split(".").length;
 
-      const code = generateErrorContract(
+      const code = generateFunctionContract(
         {
           functionName: fn.functionName,
           modulePath: fullModulePath,
           errors,
+          returnType: fn.returnType,
         },
-        depth
+        depth,
+        tableSchemas
       );
 
       // Create output path: contracts/errors/{fileName}/{functionName}.ts
@@ -731,31 +964,6 @@ function main() {
       );
       generated.push(relativeToOutput);
     }
-  }
-
-  // -------------------------------------------------------------------------
-  // Generate data schemas
-  // -------------------------------------------------------------------------
-  console.log("\nGenerating data schemas from schema.ts...\n");
-
-  const schemas = extractTableSchemas(project, schemaFile);
-
-  // Clean and recreate schemas directory
-  if (fs.existsSync(schemasOutputDir)) {
-    fs.rmSync(schemasOutputDir, { recursive: true });
-  }
-  fs.mkdirSync(schemasOutputDir, { recursive: true });
-
-  const generatedSchemas: string[] = [];
-
-  for (const table of schemas) {
-    const code = generateDataSchema(table);
-    const fileName = `${toKebabCase(table.name)}.ts`;
-    const outFile = path.join(schemasOutputDir, fileName);
-
-    fs.writeFileSync(outFile, code);
-    console.log(`  Generated: schemas/${fileName}`);
-    generatedSchemas.push(fileName);
   }
 
   // -------------------------------------------------------------------------

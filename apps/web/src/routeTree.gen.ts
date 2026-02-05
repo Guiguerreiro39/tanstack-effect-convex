@@ -9,16 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as App_rootRouteImport } from './routes/_app/__root'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AppTodosIndexRouteImport } from './routes/_app/todos/index'
 import { Route as AppDashboardIndexRouteImport } from './routes/_app/dashboard/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
-const App_rootRoute = App_rootRouteImport.update({
-  id: '/_app/__root',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/_app/',
   path: '/',
@@ -54,7 +49,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_app/__root': typeof App_rootRoute
   '/_app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_app/dashboard/': typeof AppDashboardIndexRoute
@@ -67,7 +61,6 @@ export interface FileRouteTypes {
   to: '/' | '/api/auth/$' | '/dashboard' | '/todos'
   id:
     | '__root__'
-    | '/_app/__root'
     | '/_app/'
     | '/api/auth/$'
     | '/_app/dashboard/'
@@ -75,7 +68,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  App_rootRoute: typeof App_rootRoute
   AppIndexRoute: typeof AppIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   AppDashboardIndexRoute: typeof AppDashboardIndexRoute
@@ -84,13 +76,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_app/__root': {
-      id: '/_app/__root'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof App_rootRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_app/': {
       id: '/_app/'
       path: '/'
@@ -123,7 +108,6 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  App_rootRoute: App_rootRoute,
   AppIndexRoute: AppIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   AppDashboardIndexRoute: AppDashboardIndexRoute,

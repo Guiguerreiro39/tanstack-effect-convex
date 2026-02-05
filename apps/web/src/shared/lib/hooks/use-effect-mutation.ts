@@ -3,7 +3,10 @@ import {
   type UseMutationResult,
   useMutation,
 } from "@tanstack/react-query";
-import type { ErrorDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
+import {
+  type FunctionDescriptor,
+  SchemaDecodeError,
+} from "@tanstack-effect-convex/backend/src/contracts";
 import { useConvex } from "convex/react";
 import type {
   FunctionArgs,
@@ -11,16 +14,18 @@ import type {
   FunctionReturnType,
 } from "convex/server";
 import { ConvexError } from "convex/values";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
-type UseEffectMutationResult<
-  F extends FunctionReference<"mutation">,
-  E,
-> = UseMutationResult<FunctionReturnType<F>, Error, FunctionArgs<F>> & {
+type UseEffectMutationResult<A, E> = UseMutationResult<
+  A,
+  Error,
+  Record<string, unknown>
+> & {
   /**
    * Returns Effect with scoped error type.
+   * Will fail with E for declared errors, or SchemaDecodeError if data validation fails.
    */
-  toEffect: () => Effect.Effect<FunctionReturnType<F>, E>;
+  toEffect: () => Effect.Effect<A, E | SchemaDecodeError>;
 };
 
 type Options<F extends FunctionReference<"mutation">> = Omit<
@@ -29,20 +34,20 @@ type Options<F extends FunctionReference<"mutation">> = Omit<
 >;
 
 /**
- * Convex mutation hook with scoped Effect error types.
+ * Convex mutation hook with scoped Effect error types and data validation.
  *
  * @param funcRef - Convex mutation function reference
- * @param descriptor - Error descriptor from generated contracts (required)
+ * @param descriptor - Function descriptor from generated contracts (required)
  * @param options - React Query mutation options
  *
  * @example
  * ```tsx
  * import { api } from "@backend/_generated/api";
- * import { createDescriptor, type CreateError } from "@backend/convex/lib/effect-contracts/todos/create";
+ * import { todosCreateDescriptor, type TodosCreateError } from "@backend/contracts";
  *
- * const createTodo = useEffectMutation(api.todos.create.create, createDescriptor);
+ * const createTodo = useEffectMutation(api.todos.create, todosCreateDescriptor);
  *
- * // Error is typed as CreateError (ForbiddenError | UnknownError)
+ * // Error is typed as TodosCreateError | SchemaDecodeError
  * matchEffect(createTodo.toEffect(), {
  *   Pending: () => <Spinner />,
  *   Failure: (err) => {
@@ -53,11 +58,15 @@ type Options<F extends FunctionReference<"mutation">> = Omit<
  * });
  * ```
  */
-export function useEffectMutation<F extends FunctionReference<"mutation">, E>(
+export function useEffectMutation<
+  F extends FunctionReference<"mutation">,
+  A,
+  E,
+>(
   funcRef: F,
-  descriptor: ErrorDescriptor<E>,
+  descriptor: FunctionDescriptor<A, E>,
   options?: Options<F>
-): UseEffectMutationResult<F, E> {
+): UseEffectMutationResult<A, E> {
   const convex = useConvex();
 
   const mutation = useMutation({
@@ -66,7 +75,7 @@ export function useEffectMutation<F extends FunctionReference<"mutation">, E>(
     ...options,
   });
 
-  const toEffect = (): Effect.Effect<FunctionReturnType<F>, E> =>
+  const toEffect = (): Effect.Effect<A, E | SchemaDecodeError> =>
     Effect.gen(function* () {
       if (mutation.isPending || mutation.isIdle) {
         return yield* Effect.never;
@@ -81,7 +90,7 @@ export function useEffectMutation<F extends FunctionReference<"mutation">, E>(
             typeof data === "object" && data !== null && "error" in data
               ? data.error
               : data;
-          const decoded = descriptor.decode(errorData);
+          const decoded = descriptor.decodeError(errorData);
           if (decoded) {
             return yield* Effect.fail(decoded);
           }
@@ -92,8 +101,22 @@ export function useEffectMutation<F extends FunctionReference<"mutation">, E>(
         );
       }
 
-      return mutation.data;
+      // Validate data against schema
+      const parseResult = Schema.decodeUnknownEither(descriptor.dataSchema)(
+        mutation.data
+      );
+
+      if (parseResult._tag === "Left") {
+        return yield* Effect.fail(
+          new SchemaDecodeError({
+            path: descriptor.path,
+            cause: parseResult.left,
+          })
+        );
+      }
+
+      return parseResult.right;
     });
 
-  return { ...mutation, toEffect };
+  return { ...mutation, toEffect } as UseEffectMutationResult<A, E>;
 }

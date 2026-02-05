@@ -2,16 +2,13 @@
 
 import { Schema } from "effect";
 
-export const TodoId = Schema.String.pipe(Schema.brand("TodoId"));
-export type TodoId = typeof TodoId.Type;
-
 export const TodoBase = Schema.Struct({
   text: Schema.String,
   completed: Schema.Boolean,
 });
 
 export const Todo = Schema.Struct({
-  _id: TodoId,
+  _id: Schema.String,
   _creationTime: Schema.Number,
   text: Schema.String,
   completed: Schema.Boolean,
