@@ -1,5 +1,8 @@
 // packages/backend/scripts/contract-codegen.ts
 // biome-ignore lint/performance/noNamespaceImport: node:fs requires namespace
+
+import { execSync } from "node:child_process";
+// biome-ignore lint/performance/noNamespaceImport: node:path requires namespace
 import * as fs from "node:fs";
 // biome-ignore lint/performance/noNamespaceImport: node:path requires namespace
 import * as path from "node:path";
@@ -998,6 +1001,20 @@ function main() {
   console.log(
     `\nDone! Generated ${generated.length} error contracts and ${generatedSchemas.length} data schemas.`
   );
+
+  console.log("\nFormatting generated files...");
+  try {
+    const rootDir = path.resolve(__dirname, "../../..");
+    const relativeContractsDir = path.relative(rootDir, contractsDir);
+
+    execSync(`pnpm dlx ultracite fix "${relativeContractsDir}"`, {
+      stdio: "inherit",
+      cwd: rootDir,
+    });
+    console.log("Formatting complete.");
+  } catch (error) {
+    console.error("Failed to format generated files:", error);
+  }
 }
 
 main();
