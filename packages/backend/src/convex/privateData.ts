@@ -19,6 +19,7 @@ export const get = query({
         return {
           message: "This is private",
         };
-      })
+      }),
+      "privateData.get"
     ),
 });

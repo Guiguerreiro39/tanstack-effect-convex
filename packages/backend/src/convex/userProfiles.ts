@@ -22,6 +22,8 @@ export const getCurrentProfile = query({
         });
 
         return userProfile;
-      })
+      }),
+      "userProfiles.getCurrentProfile",
+      { userId: args.userId }
     ),
 });

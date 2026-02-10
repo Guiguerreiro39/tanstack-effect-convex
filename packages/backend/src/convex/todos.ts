@@ -21,7 +21,9 @@ export const create = mutation({
             }),
           catch: (error) => new UnknownError({ message: String(error) }),
         });
-      })
+      }),
+      "todos.create",
+      { text: args.text }
     ),
 });
 
@@ -41,7 +43,9 @@ export const deleteTodo = mutation({
         });
 
         return null;
-      })
+      }),
+      "todos.deleteTodo",
+      { id: args.id }
     ),
 });
 
@@ -54,7 +58,8 @@ export const getAll = query({
           try: () => ctx.db.query("todos").collect(),
           catch: (error) => new UnknownError({ message: String(error) }),
         });
-      })
+      }),
+      "todos.getAll"
     ),
 });
 
@@ -75,6 +80,8 @@ export const toggle = mutation({
         });
 
         return null;
-      })
+      }),
+      "todos.toggle",
+      { id: args.id, completed: args.completed }
     ),
 });

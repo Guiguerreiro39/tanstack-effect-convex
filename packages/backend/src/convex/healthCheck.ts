@@ -8,6 +8,7 @@ export const get = query({
       ctx,
       Effect.gen(function* () {
         return yield* Effect.succeed("OK");
-      })
+      }),
+      "healthCheck.get"
     ),
 });
