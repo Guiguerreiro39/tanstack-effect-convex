@@ -9,10 +9,16 @@ export interface ErrorDef {
   fields: ErrorFieldDef[];
 }
 
+export interface ReturnTypeInfo {
+  isArray: boolean;
+  isNull: boolean;
+  tableName: string | null;
+}
+
 export interface ScannedFunction {
   functionName: string;
   errorTags: string[];
-  returnType: string | null;
+  returnTypeInfo: ReturnTypeInfo;
 }
 
 export interface ScannedFile {
