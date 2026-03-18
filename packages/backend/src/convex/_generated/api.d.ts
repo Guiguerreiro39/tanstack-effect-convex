@@ -15,6 +15,7 @@ import type * as lib_constants from "../lib/constants.js";
 import type * as lib_currentSession from "../lib/currentSession.js";
 import type * as lib_policies from "../lib/policies.js";
 import type * as lib_runtime from "../lib/runtime.js";
+import type * as lib_tracing from "../lib/tracing.js";
 import type * as privateData from "../privateData.js";
 import type * as schemas_auth from "../schemas/auth.js";
 import type * as schemas_errors from "../schemas/errors.js";
@@ -35,6 +36,7 @@ declare const fullApi: ApiFromModules<{
   "lib/currentSession": typeof lib_currentSession;
   "lib/policies": typeof lib_policies;
   "lib/runtime": typeof lib_runtime;
+  "lib/tracing": typeof lib_tracing;
   privateData: typeof privateData;
   "schemas/auth": typeof schemas_auth;
   "schemas/errors": typeof schemas_errors;

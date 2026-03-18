@@ -4,7 +4,7 @@ import { api } from "../_generated/api";
 import schema from "../schema";
 
 describe("todos", () => {
-  const modules = import.meta.glob("./**/*.*s");
+  const modules = import.meta.glob("../**/*.*s");
 
   it("should create a todo", async () => {
     const t = convexTest(schema, modules);
