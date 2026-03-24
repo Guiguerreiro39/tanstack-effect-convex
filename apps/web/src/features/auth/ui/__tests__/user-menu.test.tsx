@@ -11,7 +11,7 @@ vi.mock("@/shared/lib/auth-client", () => ({
   },
 }));
 
-vi.mock("@/shared/ui/dropdown-menu", () => ({
+vi.mock("@tanstack-effect-convex/ui/components/dropdown-menu", () => ({
   DropdownMenu: ({ children }: any) => <div>{children}</div>,
   DropdownMenuTrigger: ({ children }: any) => (
     <button type="button">{children}</button>
