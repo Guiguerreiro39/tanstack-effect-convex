@@ -1,0 +1,26 @@
+{
+  "name": "@tanstack-effect-convex/ui",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./components/*": "./src/*.tsx",
+    "./components/ui/*": "./src/*.tsx",
+    "./globals.css": "./src/globals.css"
+  },
+  "dependencies": {
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-dropdown-menu": "^2.1.6",
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sonner": "^2.0.3",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@tanstack-effect-convex/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
