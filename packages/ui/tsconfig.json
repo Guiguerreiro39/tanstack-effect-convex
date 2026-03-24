@@ -1,6 +1,7 @@
 {
-  "extends": "@tanstack-effect-convex/config/tsconfig.json",
+  "extends": "@tanstack-effect-convex/config/tsconfig.base.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
