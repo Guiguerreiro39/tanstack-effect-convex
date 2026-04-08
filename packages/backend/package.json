@@ -4,6 +4,11 @@
   "description": "",
   "license": "ISC",
   "author": "",
+  "exports": {
+    "./api": "./src/convex/_generated/api.js",
+    "./contracts": "./src/contracts/index.ts",
+    "./dataModel": "./src/convex/_generated/dataModel.js"
+  },
   "scripts": {
     "dev": "concurrently \"convex dev\" \"node scripts/watch-codegen.mjs\"",
     "dev:setup": "convex dev --configure --until-success",

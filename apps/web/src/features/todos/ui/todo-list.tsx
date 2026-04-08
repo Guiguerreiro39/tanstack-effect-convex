@@ -1,11 +1,11 @@
-import { matchEffect } from "@/shared/lib/effect/match-effect";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/shared/ui/card";
+} from "@tanstack-effect-convex/ui/components/card";
+import { matchEffect } from "@/shared/lib/effect/match-effect";
 import { useTodos } from "../api/get-all";
 import { AddTodoForm } from "./add-todo-form";
 import { TodoItem } from "./todo-item";

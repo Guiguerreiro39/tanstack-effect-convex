@@ -1,8 +1,8 @@
-import type { Todo } from "@tanstack-effect-convex/backend/src/contracts";
-import type { Id } from "@tanstack-effect-convex/backend/src/convex/_generated/dataModel";
+import type { Todo } from "@tanstack-effect-convex/backend/contracts";
+import type { Id } from "@tanstack-effect-convex/backend/dataModel";
+import { Button } from "@tanstack-effect-convex/ui/components/button";
+import { Checkbox } from "@tanstack-effect-convex/ui/components/checkbox";
 import { Trash2 } from "lucide-react";
-import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 import { useDeleteTodo } from "../api/delete";
 import { useToggleTodo } from "../api/toggle";
 

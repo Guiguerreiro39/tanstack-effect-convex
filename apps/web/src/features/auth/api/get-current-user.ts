@@ -1,4 +1,4 @@
-import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/api";
 import { useQuery } from "convex/react";
 
 export function useCurrentUser() {

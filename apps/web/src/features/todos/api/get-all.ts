@@ -1,5 +1,5 @@
-import { todosGetAllDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
-import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/api";
+import { todosGetAllDescriptor } from "@tanstack-effect-convex/backend/contracts";
 import { useEffectQuery } from "@/shared/lib/hooks/use-effect-query";
 
 export function useTodos() {

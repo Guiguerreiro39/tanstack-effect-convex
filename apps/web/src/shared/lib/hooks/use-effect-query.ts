@@ -3,7 +3,7 @@ import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import {
   type FunctionDescriptor,
   SchemaDecodeError,
-} from "@tanstack-effect-convex/backend/src/contracts";
+} from "@tanstack-effect-convex/backend/contracts";
 import type { FunctionArgs, FunctionReference } from "convex/server";
 import { ConvexError } from "convex/values";
 import { Effect, Schema } from "effect";

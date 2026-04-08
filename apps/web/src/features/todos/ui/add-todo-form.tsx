@@ -1,6 +1,6 @@
+import { Button } from "@tanstack-effect-convex/ui/components/button";
+import { Input } from "@tanstack-effect-convex/ui/components/input";
 import { useState } from "react";
-import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
 import { useCreateTodo } from "../api/create";
 
 export function AddTodoForm() {

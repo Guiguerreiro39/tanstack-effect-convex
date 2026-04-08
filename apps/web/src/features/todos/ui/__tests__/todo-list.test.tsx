@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/performance/noNamespaceImport: <explanation> */
 
-import type { TodosGetAllError } from "@tanstack-effect-convex/backend/src/contracts";
-import type { Doc } from "@tanstack-effect-convex/backend/src/convex/_generated/dataModel";
+import type { TodosGetAllError } from "@tanstack-effect-convex/backend/contracts";
+import type { Doc } from "@tanstack-effect-convex/backend/dataModel";
 import { render, screen } from "@testing-library/react";
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";

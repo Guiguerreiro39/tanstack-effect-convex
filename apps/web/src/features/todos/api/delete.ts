@@ -1,5 +1,5 @@
-import { todosDeleteTodoDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
-import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/api";
+import { todosDeleteTodoDescriptor } from "@tanstack-effect-convex/backend/contracts";
 import { useEffectMutation } from "@/shared/lib/hooks/use-effect-mutation";
 
 export function useDeleteTodo() {

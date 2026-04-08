@@ -6,7 +6,7 @@ import {
 import {
   type FunctionDescriptor,
   SchemaDecodeError,
-} from "@tanstack-effect-convex/backend/src/contracts";
+} from "@tanstack-effect-convex/backend/contracts";
 import { useConvex } from "convex/react";
 import type {
   FunctionArgs,

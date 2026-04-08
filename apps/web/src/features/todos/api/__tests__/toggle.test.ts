@@ -1,5 +1,5 @@
-import { todosToggleDescriptor } from "@tanstack-effect-convex/backend/src/contracts";
-import { api } from "@tanstack-effect-convex/backend/src/convex/_generated/api";
+import { api } from "@tanstack-effect-convex/backend/api";
+import { todosToggleDescriptor } from "@tanstack-effect-convex/backend/contracts";
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useToggleTodo } from "../toggle";
