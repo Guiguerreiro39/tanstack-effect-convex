@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release Pull Request or Publisher
+        id: changesets
+        uses: changesets/action@v1
+        # We don't set a publish command to avoid standard npm publish assumptions.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Tags & Github Releases
+        if: steps.changesets.outputs.hasChangesets == 'false'
+        run: |
+          pnpm exec changeset publish
+          git push --follow-tags
+          # For each tag created, we can generate a GitHub release
+          for tag in $(git tag --points-at HEAD); do
+            gh release create "$tag" --title "$tag" --generate-notes
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
