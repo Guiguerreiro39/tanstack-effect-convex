@@ -9,7 +9,8 @@ describe("todos", () => {
   it("should create a todo", async () => {
     const t = convexTest(schema, modules);
 
-    // Create a user context
+    // To mock authorization, we use `t.withIdentity()`. Any calls made on
+    // `tWithAuth` will bypass `Policies.requireSignedIn` requirements.
     const userId = "user-id" as any;
     const tWithAuth = t.withIdentity({ subject: userId });
 
@@ -23,7 +24,8 @@ describe("todos", () => {
   it("should fail to create a todo if not signed in", async () => {
     const t = convexTest(schema, modules);
 
-    // No identity
+    // When testing failures from unauthenticated requests, query/mutation
+    // on `t` directly will correctly fail the requireSignedIn policies.
     await expect(
       t.mutation(api.todos.create, { text: "Buy milk" })
     ).rejects.toThrow();
