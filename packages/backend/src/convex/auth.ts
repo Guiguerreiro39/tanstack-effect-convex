@@ -1,3 +1,4 @@
+import { expo } from "@better-auth/expo";
 import {
   type AuthFunctions,
   createClient,
@@ -59,7 +60,7 @@ function createAuth(
   return betterAuth({
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl],
+    trustedOrigins: [siteUrl, "myapp://"],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
@@ -70,6 +71,7 @@ function createAuth(
         authConfig,
         jwksRotateOnTokenGenerationError: true,
       }),
+      expo(),
     ],
     logger: {
       disabled: optionsOnly,
