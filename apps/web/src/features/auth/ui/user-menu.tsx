@@ -1,4 +1,5 @@
-import { Button } from "@tanstack-effect-convex/ui/components/button";
+import { authClient } from "@/shared/lib/auth-client";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +8,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@tanstack-effect-convex/ui/components/dropdown-menu";
-import { authClient } from "@/shared/lib/auth-client";
+} from "@/shared/ui/dropdown-menu";
 import { useCurrentUser } from "../api/get-current-user";
 
 export function UserMenu() {

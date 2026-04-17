@@ -49,7 +49,8 @@ const dataSchema = Schema.Array(Todo);
  */
 export const todosGetAllDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  TodosGetAllError
+  TodosGetAllError,
+  typeof dataSchema.Encoded
 > = {
   path: "todos/getAll",
   allowedTags,

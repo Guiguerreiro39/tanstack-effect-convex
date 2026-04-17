@@ -1,0 +1,30 @@
+{
+  "name": "@tanstack-effect-convex/effect-convex",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./effect": "./src/effect/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@convex-dev/react-query": "^0.1.0",
+    "@tanstack-effect-convex/backend": "workspace:*",
+    "convex": "catalog:",
+    "effect": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "@tanstack/react-query": "*"
+  },
+  "devDependencies": {
+    "@tanstack-effect-convex/config": "workspace:*",
+    "@types/react": "catalog:",
+    "typescript": "catalog:",
+    "@tanstack/react-query": "^5.80.6"
+  }
+}

@@ -60,7 +60,7 @@ function createAuth(
   return betterAuth({
     secret: process.env.BETTER_AUTH_SECRET,
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl, "myapp://"],
+    trustedOrigins: [siteUrl, "exp://"],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

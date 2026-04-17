@@ -167,7 +167,8 @@ export function generateFunctionContract(
     `export const ${camelDescriptorName}Descriptor: FunctionDescriptor<`
   );
   lines.push("  typeof dataSchema.Type,");
-  lines.push(`  ${pascalPrefix}Error`);
+  lines.push(`  ${pascalPrefix}Error,`);
+  lines.push("  typeof dataSchema.Encoded");
   lines.push("> = {");
   lines.push(`  path: "${modulePath}",`);
   lines.push("  allowedTags,");

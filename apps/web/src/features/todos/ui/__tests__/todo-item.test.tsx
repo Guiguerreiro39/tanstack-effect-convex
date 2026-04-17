@@ -1,4 +1,6 @@
 /** biome-ignore-all lint/performance/noNamespaceImport: <explanation> */
+
+import type { Id } from "@tanstack-effect-convex/backend/dataModel";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import * as UseDeleteTodo from "../../api/delete";
@@ -7,7 +9,7 @@ import { TodoItem } from "../todo-item";
 
 describe("TodoItem", () => {
   const mockTodo = {
-    _id: "todo1",
+    _id: "todo1" as Id<"todos">,
     text: "Buy milk",
     completed: false,
     _creationTime: 123,

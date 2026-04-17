@@ -48,7 +48,8 @@ const dataSchema = Schema.Unknown;
  */
 export const userProfilesGetCurrentProfileDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  UserProfilesGetCurrentProfileError
+  UserProfilesGetCurrentProfileError,
+  typeof dataSchema.Encoded
 > = {
   path: "userProfiles/getCurrentProfile",
   allowedTags,

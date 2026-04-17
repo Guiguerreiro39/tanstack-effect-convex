@@ -173,7 +173,8 @@ export function main() {
 // Function descriptor for typed error contracts and data schema validation.
 // Used by generated contracts and the useEffectMutation/useEffectQuery hooks.
 
-import { Data, type Schema } from "effect";
+import { Data, Schema, type Schema as SchemaType } from "effect";
+import type { GenericId } from "convex/values";
 
 /**
  * Error thrown when data schema decoding fails.
@@ -191,9 +192,17 @@ export interface FunctionDescriptor<A, E, I = A> {
   readonly path: string;
   readonly allowedTags: readonly string[];
   readonly decodeError: (e: unknown) => E | undefined;
-  readonly dataSchema: Schema.Schema<A, I>;
+  readonly dataSchema: SchemaType.Schema<A, I>;
 }
-`;
+
+/**
+ * Creates an Effect Schema for a Convex Id<TableName>.
+ * The resulting type is \`string & Brand<TableName>\` which is
+ * structurally compatible with Convex's Id<TableName>.
+ */
+export const IdSchema = <T extends string>(_table: T) =>
+  Schema.String.pipe(Schema.filter((s): s is GenericId<T> => typeof s === "string"));
+`
   fs.writeFileSync(path.join(contractsDir, "types.ts"), typesTsContent);
 
 

@@ -40,7 +40,8 @@ const dataSchema = Schema.Unknown;
  */
 export const privateDataGetDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  PrivateDataGetError
+  PrivateDataGetError,
+  typeof dataSchema.Encoded
 > = {
   path: "privateData/get",
   allowedTags,

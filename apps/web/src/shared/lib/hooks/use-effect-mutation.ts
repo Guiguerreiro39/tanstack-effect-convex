@@ -62,9 +62,10 @@ export function useEffectMutation<
   F extends FunctionReference<"mutation">,
   A,
   E,
+  I,
 >(
   funcRef: F,
-  descriptor: FunctionDescriptor<A, E>,
+  descriptor: FunctionDescriptor<A, E, I>,
   options?: Options<F>
 ): UseEffectMutationResult<A, E> {
   const convex = useConvex();

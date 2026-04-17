@@ -1,8 +1,7 @@
 import type { Todo } from "@tanstack-effect-convex/backend/contracts";
-import type { Id } from "@tanstack-effect-convex/backend/dataModel";
-import { Button } from "@tanstack-effect-convex/ui/components/button";
-import { Checkbox } from "@tanstack-effect-convex/ui/components/checkbox";
 import { Trash2 } from "lucide-react";
+import { Button } from "@/shared/ui/button";
+import { Checkbox } from "@/shared/ui/checkbox";
 import { useDeleteTodo } from "../api/delete";
 import { useToggleTodo } from "../api/toggle";
 
@@ -14,15 +13,12 @@ export function TodoItem({ todo }: TodoItemProps) {
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
 
-  // Cast to Id since our validated type uses string but Convex mutations expect Id
-  const todoId = todo._id as Id<"todos">;
-
   const handleToggle = () => {
-    toggleMutation.mutate({ id: todoId, completed: !todo.completed });
+    toggleMutation.mutate({ id: todo._id, completed: !todo.completed });
   };
 
   const handleDelete = () => {
-    deleteMutation.mutate({ id: todoId });
+    deleteMutation.mutate({ id: todo._id });
   };
 
   return (

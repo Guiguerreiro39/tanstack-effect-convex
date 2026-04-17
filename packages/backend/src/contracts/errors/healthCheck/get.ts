@@ -40,7 +40,8 @@ const dataSchema = Schema.Unknown;
  */
 export const healthCheckGetDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  HealthCheckGetError
+  HealthCheckGetError,
+  typeof dataSchema.Encoded
 > = {
   path: "healthCheck/get",
   allowedTags,

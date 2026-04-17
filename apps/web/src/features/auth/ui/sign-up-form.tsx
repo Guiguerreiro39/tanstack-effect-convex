@@ -1,11 +1,11 @@
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import { Button } from "@tanstack-effect-convex/ui/components/button";
-import { Input } from "@tanstack-effect-convex/ui/components/input";
-import { Label } from "@tanstack-effect-convex/ui/components/label";
 import { Schema } from "effect";
 import { toast } from "sonner";
 import { authClient } from "@/shared/lib/auth-client";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Label } from "@/shared/ui/label";
 import { SignUpSchema } from "../model/schemas";
 
 interface SignUpFormProps {

@@ -10,11 +10,11 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { createServerFn } from "@tanstack/react-start";
-import { Toaster } from "@tanstack-effect-convex/ui/components/sonner";
 import { Header } from "@/components/header";
 import appCss from "@/index.css?url";
 import { authClient } from "@/shared/lib/auth-client";
 import { getToken } from "@/shared/lib/auth-server";
+import { Toaster } from "@/shared/ui/sonner";
 
 const getAuth = createServerFn({ method: "GET" }).handler(async () => {
   return await getToken();

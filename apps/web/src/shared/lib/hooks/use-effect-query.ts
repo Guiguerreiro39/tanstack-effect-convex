@@ -43,9 +43,9 @@ export type UseEffectQueryResult<T, E> = UseQueryResult<T, Error> & {
  * });
  * ```
  */
-export function useEffectQuery<F extends FunctionReference<"query">, A, E>(
+export function useEffectQuery<F extends FunctionReference<"query">, A, E, I>(
   funcRef: F,
-  descriptor: FunctionDescriptor<A, E>,
+  descriptor: FunctionDescriptor<A, E, I>,
   args: FunctionArgs<F>
 ): UseEffectQueryResult<A, E> {
   const query = useQuery(convexQuery(funcRef, args));

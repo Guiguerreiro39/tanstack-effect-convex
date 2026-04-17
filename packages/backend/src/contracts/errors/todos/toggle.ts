@@ -52,7 +52,8 @@ const dataSchema = Schema.Null;
  */
 export const todosToggleDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  TodosToggleError
+  TodosToggleError,
+  typeof dataSchema.Encoded
 > = {
   path: "todos/toggle",
   allowedTags,

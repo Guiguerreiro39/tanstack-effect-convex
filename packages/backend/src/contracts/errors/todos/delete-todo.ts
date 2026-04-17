@@ -52,7 +52,8 @@ const dataSchema = Schema.Null;
  */
 export const todosDeleteTodoDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  TodosDeleteTodoError
+  TodosDeleteTodoError,
+  typeof dataSchema.Encoded
 > = {
   path: "todos/deleteTodo",
   allowedTags,

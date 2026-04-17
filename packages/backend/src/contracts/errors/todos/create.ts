@@ -52,7 +52,8 @@ const dataSchema = Schema.Unknown;
  */
 export const todosCreateDescriptor: FunctionDescriptor<
   typeof dataSchema.Type,
-  TodosCreateError
+  TodosCreateError,
+  typeof dataSchema.Encoded
 > = {
   path: "todos/create",
   allowedTags,
